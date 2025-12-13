@@ -50,14 +50,18 @@ jobs:
     - name: Check Dependencies
       run: ./gradlew checkDependencies
       # nova task: apenas verifica se dependências existem online
+      # gera check-report.txt com status (✅ encontrada, ⚠️ não encontrada)
+      # só falha se nenhuma dependência for encontrada
 
     - name: Download Dependencies
       run: ./gradlew downloadDependencies
       # nova task: baixa dependências, pula falhas individuais
+      # gera download-report.txt com status (✅ sucesso, ⚠️ não encontrada, ❌ falha)
 
     - name: Generate Reports
       run: ./gradlew generateReport
-      # gera relatório consolidado (check + download)
+      # gera relatório consolidado (check + download) em libs-report.txt
+      # inclui informações da versão pedida e última versão oficial encontrada
 
     - name: Upload All Libs
       uses: actions/upload-artifact@v4
@@ -78,4 +82,4 @@ jobs:
       with:
         name: libgdx-reports
         path: build/libs-report.txt
-      # relatório geral consolidado
+      # relatório geral consolidado (check + download)
