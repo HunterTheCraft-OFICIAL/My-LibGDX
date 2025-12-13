@@ -34,7 +34,7 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-tools:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-ai:1.8.2"
-    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.0" // versão estável
+    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.0-SNAPSHOT" // versão snapshot
     implementation "com.badlogicgames.gdx:gdx-bullet:1.12.0"
 
     // ⚠️ Internos/experimentais (não disponíveis no Maven Central)
@@ -44,48 +44,68 @@ dependencies {
     // implementation "com.badlogicgames.gdx:gdx-tests:1.12.0"
 }
 
-// Task para copiar todas as dependências baixadas
-task copyAllDependencies(type: Copy) {
-    from configurations.runtimeClasspath
-    into "$buildDir/all-libs"
-}
-
-// Task para copiar cada dependência individualmente + relatório separado
-configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-    def name = artifact.name
-    tasks.register("copy_${name}", Copy) {
-        from artifact.file
-        into "$buildDir/libs-individual/${name}"
-        doLast {
-            def reportFile = file("$buildDir/libs-individual/${name}/report-${name}.txt")
-            try {
-                if (artifact.file.exists()) {
-                    reportFile.text = "STATUS: SUCESSO\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nArquivo: ${artifact.file}"
-                } else {
-                    reportFile.text = "STATUS: NÃO ENCONTRADA\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}"
-                }
-            } catch(Exception e) {
-                reportFile.text = "STATUS: FALHA NO DOWNLOAD\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nErro: ${e.message}"
+// Task 1: Checar se dependências existem
+task checkDependencies {
+    doLast {
+        def reportFile = file("$buildDir/check-report.txt")
+        reportFile.text = "=== RELATÓRIO DE CHECAGEM ===\n\n"
+        def found = 0
+        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            if (artifact.file.exists()) {
+                reportFile << "✅ Encontrada: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
+                found++
+            } else {
+                reportFile << "⚠️ Não encontrada: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
             }
+        }
+        if (found == 0) {
+            throw new GradleException("❌ Nenhuma dependência encontrada online!")
         }
     }
 }
 
-// Task para relatório geral
-task generateReport {
+// Task 2: Baixar dependências (pula falhas)
+task downloadDependencies {
     doLast {
-        def reportFile = file("$buildDir/libs-report.txt")
-        reportFile.text = ""
+        def reportFile = file("$buildDir/download-report.txt")
+        reportFile.text = "=== RELATÓRIO DE DOWNLOAD ===\n\n"
+        def success = 0
         configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
             try {
                 if (artifact.file.exists()) {
-                    reportFile << "STATUS: SUCESSO\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nArquivo: ${artifact.file}\n\n"
+                    copy {
+                        from artifact.file
+                        into "$buildDir/all-libs"
+                    }
+                    reportFile << "✅ Sucesso: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
+                    success++
                 } else {
-                    reportFile << "STATUS: NÃO ENCONTRADA\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\n\n"
+                    reportFile << "⚠️ Não encontrada: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
                 }
             } catch(Exception e) {
-                reportFile << "STATUS: FALHA NO DOWNLOAD\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nErro: ${e.message}\n\n"
+                reportFile << "❌ Falha no download: ${artifact.name} (${artifact.moduleVersion.id.version})\nErro: ${e.message}\n"
             }
+        }
+        if (success == 0) {
+            reportFile << "\n❌ Nenhuma dependência foi baixada com sucesso.\n"
+        }
+    }
+}
+
+// Task 3: Relatório geral consolidado
+task generateReport {
+    dependsOn checkDependencies, downloadDependencies
+    doLast {
+        def reportFile = file("$buildDir/libs-report.txt")
+        reportFile.text = "=== RELATÓRIO CONSOLIDADO ===\n\n"
+        def checkReport = file("$buildDir/check-report.txt")
+        def downloadReport = file("$buildDir/download-report.txt")
+
+        if (checkReport.exists()) {
+            reportFile << checkReport.text + "\n"
+        }
+        if (downloadReport.exists()) {
+            reportFile << downloadReport.text + "\n"
         }
     }
 }

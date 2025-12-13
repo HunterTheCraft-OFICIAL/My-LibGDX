@@ -14,21 +14,25 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      # baixa o código do repositório
 
     - name: Setup JDK
       uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
+      # configura o Java 17 (Temurin)
 
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
         cache-disabled: false
         gradle-home-cache-includes: wrapper,dists,caches
+      # habilita cache para wrapper e dependências
 
     - name: Ensure Gradlew is executable
       run: chmod +x ./gradlew
+      # garante permissão de execução para gradlew
 
     - name: Build with Gradle 9 (fallback to 8.7)
       run: |
@@ -41,27 +45,37 @@ jobs:
           sed -i 's/gradle-9\.0\.0-bin\.zip/gradle-8.7-bin.zip/' gradle/wrapper/gradle-wrapper.properties
           ./gradlew build --refresh-dependencies
         fi
+      # tenta rodar com Gradle 9, se falhar troca para 8.7
 
-    - name: Copy All Dependencies
-      run: ./gradlew copyAllDependencies
+    - name: Check Dependencies
+      run: ./gradlew checkDependencies
+      # nova task: apenas verifica se dependências existem online
+
+    - name: Download Dependencies
+      run: ./gradlew downloadDependencies
+      # nova task: baixa dependências, pula falhas individuais
 
     - name: Generate Reports
       run: ./gradlew generateReport
+      # gera relatório consolidado (check + download)
 
     - name: Upload All Libs
       uses: actions/upload-artifact@v4
       with:
         name: libgdx-libs
         path: build/all-libs/
+      # artefato com todas as libs juntas
 
     - name: Upload Individual Libs
       uses: actions/upload-artifact@v4
       with:
         name: libgdx-individual
         path: build/libs-individual/
+      # artefatos com libs separadas + relatórios individuais
 
     - name: Upload Reports
       uses: actions/upload-artifact@v4
       with:
         name: libgdx-reports
         path: build/libs-report.txt
+      # relatório geral consolidado
