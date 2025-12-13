@@ -22,7 +22,7 @@ jobs:
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
-        cache-disabled: true   # cache desativado para evitar falhas 400
+        cache-disabled: true
 
     - name: Ensure Gradlew is executable
       run: chmod +x ./gradlew || true
@@ -32,7 +32,9 @@ jobs:
       run: |
         git clone https://github.com/libgdx/gdx-liftoff liftoff
         cd liftoff
-        ./gradlew liftoff --args="--no-gui --output ../generated-project --platforms=core,desktop --extensions=box2d,freetype,bullet,controllers"
+        ./gradlew run --args="--no-gui --output ../generated-project --platforms=core,desktop --extensions=box2d,freetype,bullet,controllers"
+      env:
+        JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
 
     # 2) Compilar projeto gerado
     - name: Build Liftoff Project
