@@ -24,11 +24,10 @@ jobs:
       with:
         cache-disabled: true
 
-    # 1) Baixar e executar Liftoff em modo CLI (sem GLFW)
+    # 1) Executar Liftoff direto do repo
     - name: Generate project with Liftoff (CLI headless)
       run: |
-        curl -L -o liftoff.jar https://github.com/libgdx/gdx-liftoff/releases/download/1.14.0.3/gdx-liftoff-1.14.0.3.jar
-        java -Djava.awt.headless=true -jar liftoff.jar \
+        java -Djava.awt.headless=true -jar gdx-liftoff-1.14.0.3.jar \
           --no-gui \
           --output generated-project \
           --platforms=core,desktop \
