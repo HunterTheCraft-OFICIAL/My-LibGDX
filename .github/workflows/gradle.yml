@@ -23,12 +23,24 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
+      with:
+        cache-disabled: false
+        gradle-home-cache-includes: wrapper,dists,caches
 
     - name: Ensure Gradlew is executable
       run: chmod +x ./gradlew
 
-    - name: Build and Download Dependencies
-      run: ./gradlew build --refresh-dependencies
+    - name: Build with Gradle 9 (fallback to 8.7)
+      run: |
+        set -e
+        echo "Tentando Gradle v9..."
+        if ./gradlew build --refresh-dependencies; then
+          echo "Gradle v9 OK"
+        else
+          echo "Gradle v9 falhou, tentando v8.7..."
+          sed -i 's/gradle-9\.0\.0-bin\.zip/gradle-8.7-bin.zip/' gradle/wrapper/gradle-wrapper.properties
+          ./gradlew build --refresh-dependencies
+        fi
 
     - name: Copy All Dependencies
       run: ./gradlew copyAllDependencies
