@@ -24,10 +24,14 @@ jobs:
       with:
         cache-disabled: true
 
-    # 1) Executar Liftoff direto do repo
+    # Instalar Xvfb para simular display
+    - name: Install Xvfb
+      run: sudo apt-get update && sudo apt-get install -y xvfb
+
+    # 1) Executar Liftoff com Xvfb (headless)
     - name: Generate project with Liftoff (CLI headless)
       run: |
-        java -Djava.awt.headless=true -jar gdx-liftoff-1.14.0.3.jar \
+        xvfb-run java -Djava.awt.headless=true -jar gdx-liftoff-1.14.0.3.jar \
           --no-gui \
           --output generated-project \
           --platforms=core,desktop \

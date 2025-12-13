@@ -24,9 +24,15 @@ jobs:
       with:
         cache-disabled: true
 
-    # Instalar Xvfb para simular display
-    - name: Install Xvfb
-      run: sudo apt-get update && sudo apt-get install -y xvfb
+    # Instalar Xvfb e bibliotecas gráficas necessárias
+    - name: Install Xvfb + OpenGL/EGL libs
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb \
+          libgl1-mesa-dev \
+          libgles2-mesa-dev \
+          libegl1-mesa-dev \
+          mesa-utils
 
     # 1) Executar Liftoff com Xvfb (headless)
     - name: Generate project with Liftoff (CLI headless)
