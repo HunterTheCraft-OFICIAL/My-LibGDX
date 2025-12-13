@@ -1,0 +1,61 @@
+name: LibGDX-Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-libs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        cache-disabled: false
+        gradle-home-cache-includes: wrapper,dists,caches
+
+    - name: Ensure Gradlew is executable
+      run: chmod +x ./gradlew || true
+
+    # 1) Criar estrutura Liftoff
+    - name: Generate Liftoff Project
+      run: |
+        git clone https://github.com/libgdx/gdx-liftoff liftoff
+        cd liftoff
+        ./gradlew run --args="--no-gui --output ../generated-project --platforms=core,desktop --extensions=box2d,freetype,bullet,controllers"
+
+    # 2) Compilar projeto gerado
+    - name: Build Liftoff Project
+      run: |
+        cd generated-project
+        ./gradlew build --refresh-dependencies
+
+    # 3) Relatório de dependências resolvidas
+    - name: List Dependencies
+      run: |
+        cd generated-project
+        ./gradlew dependencies > ../dependency-report.txt
+
+    # 4) Upload dos artefatos
+    - name: Upload Libraries
+      uses: actions/upload-artifact@v4
+      with:
+        name: libgdx-libs
+        path: generated-project/build/libs/
+
+    - name: Upload Dependency Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: libgdx-dependency-report
+        path: dependency-report.txt
