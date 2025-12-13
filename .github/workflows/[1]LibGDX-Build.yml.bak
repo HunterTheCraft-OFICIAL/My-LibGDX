@@ -28,12 +28,12 @@ jobs:
     - name: Ensure Gradlew is executable
       run: chmod +x ./gradlew || true
 
-    # 1) Criar estrutura Liftoff (headless)
-    - name: Generate Liftoff Project (Headless)
+    # 1) Criar estrutura Liftoff
+    - name: Generate Liftoff Project
       run: |
         git clone https://github.com/libgdx/gdx-liftoff liftoff
         cd liftoff
-        ./gradlew liftoff --args="--no-gui --output ../generated-project --platforms=core,desktop --extensions=box2d,freetype,bullet,controllers"
+        ./gradlew run --args="--no-gui --output ../generated-project --platforms=core,desktop --extensions=box2d,freetype,bullet,controllers"
 
     # 2) Compilar projeto gerado
     - name: Build Liftoff Project
