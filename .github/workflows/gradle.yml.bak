@@ -32,7 +32,7 @@ jobs:
       run: ./gradlew generateReport
 
     - name: Upload All Libs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: libgdx-libs
         path: build/all-libs/
@@ -44,7 +44,7 @@ jobs:
         path: build/libs-individual/
 
     - name: Upload Reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: libgdx-reports
         path: build/libs-report.txt
