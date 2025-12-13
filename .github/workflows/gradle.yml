@@ -1,7 +1,8 @@
 name: LibGDX Workflow
 
 on:
-  workflow_dispatch:   # execução manual
+  workflow_dispatch:   
+  # execução manual
   push:
     branches: [ main ]
 
@@ -21,6 +22,9 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
+      
+    - name: Ensure Gradlew is executable
+  run: chmod +x ./gradlew
 
     - name: Build and Download Dependencies
       run: ./gradlew build --refresh-dependencies
