@@ -24,34 +24,37 @@ jobs:
       with:
         cache-disabled: true
 
-    # 1) Criar estrutura Liftoff (headless, sem GLFW)
-    - name: Generate Liftoff Project (Headless)
+    # 1) Baixar e executar Liftoff em modo CLI (sem GLFW)
+    - name: Generate project with Liftoff (CLI headless)
       run: |
-        git clone https://github.com/libgdx/gdx-liftoff liftoff
-        cd liftoff
-        ./gradlew classes
-        java -Djava.awt.headless=true -cp build/classes/java/main:build/resources/main gdx.liftoff.Main --no-gui --output ../generated-project --platforms=core,desktop --extensions=box2d,freetype,bullet,controllers
+        curl -L -o liftoff.jar https://github.com/libgdx/gdx-liftoff/releases/latest/download/gdx-liftoff.jar
+        java -Djava.awt.headless=true -jar liftoff.jar \
+          --no-gui \
+          --output generated-project \
+          --platforms=core,desktop \
+          --extensions=box2d,freetype,bullet,controllers
 
     # 2) Compilar projeto gerado
-    - name: Build Liftoff Project
+    - name: Build generated project
       run: |
         cd generated-project
+        chmod +x ./gradlew
         ./gradlew build --refresh-dependencies
 
     # 3) Relatório de dependências resolvidas
-    - name: List Dependencies
+    - name: Generate dependency report
       run: |
         cd generated-project
         ./gradlew dependencies > ../dependency-report.txt
 
     # 4) Upload dos artefatos
-    - name: Upload Libraries
+    - name: Upload libraries
       uses: actions/upload-artifact@v4
       with:
         name: libgdx-libs
         path: generated-project/build/libs/
 
-    - name: Upload Dependency Report
+    - name: Upload dependency report
       uses: actions/upload-artifact@v4
       with:
         name: libgdx-dependency-report
