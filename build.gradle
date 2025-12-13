@@ -34,8 +34,11 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-tools:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-ai:1.8.2"
-    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.0" // última versão publicada no Maven Central
+    implementation "com.badlogicgames.gdx:gdx-controllers:1.9.13" // última versão estável publicada no Maven Central
     implementation "com.badlogicgames.gdx:gdx-bullet:1.12.0"
+
+    // Projeto comunitário de áudio (via JitPack)
+    implementation "com.github.barsoosayque:libgdx-oboe:master-SNAPSHOT"
 
     // ⚠️ Internos/experimentais (não disponíveis no Maven Central)
     // implementation "com.badlogicgames.gdx:gdx-video:1.12.0"
@@ -48,6 +51,7 @@ dependencies {
 task checkDependencies {
     doLast {
         def reportFile = file("$buildDir/check-report.txt")
+        reportFile.parentFile.mkdirs() // garante diretório
         reportFile.text = "=== RELATÓRIO DE CHECAGEM ===\n\n"
         def found = 0
 
@@ -86,6 +90,7 @@ task checkDependencies {
 task downloadDependencies {
     doLast {
         def reportFile = file("$buildDir/download-report.txt")
+        reportFile.parentFile.mkdirs() // garante diretório
         reportFile.text = "=== RELATÓRIO DE DOWNLOAD ===\n\n"
         def success = 0
 
@@ -117,6 +122,7 @@ task generateReport {
     dependsOn checkDependencies, downloadDependencies
     doLast {
         def reportFile = file("$buildDir/libs-report.txt")
+        reportFile.parentFile.mkdirs() // garante diretório
         reportFile.text = "=== RELATÓRIO CONSOLIDADO ===\n\n"
         def checkReport = file("$buildDir/check-report.txt")
         def downloadReport = file("$buildDir/download-report.txt")

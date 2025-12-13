@@ -34,7 +34,7 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-tools:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-ai:1.8.2"
-    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.5" // última versão estável conhecida
+    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.0" // última versão publicada no Maven Central
     implementation "com.badlogicgames.gdx:gdx-bullet:1.12.0"
 
     // ⚠️ Internos/experimentais (não disponíveis no Maven Central)
@@ -44,22 +44,38 @@ dependencies {
     // implementation "com.badlogicgames.gdx:gdx-tests:1.12.0"
 }
 
-// Task 1: Checar se dependências existem
+// Task 1: Checar se dependências existem (com Busca Profunda)
 task checkDependencies {
     doLast {
         def reportFile = file("$buildDir/check-report.txt")
         reportFile.text = "=== RELATÓRIO DE CHECAGEM ===\n\n"
         def found = 0
+
         configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
             if (artifact.file.exists()) {
                 reportFile << "✅ Encontrada: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
                 found++
             } else {
                 reportFile << "⚠️ Não encontrada: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
-                // adicional: informar que pode haver versão mais recente
-                reportFile << "ℹ️ Sugestão: verifique se há versão mais recente no Maven Central.\n"
+                // Busca Profunda: tenta achar última versão oficial no Maven Central
+                try {
+                    def metaUrl = "https://repo.maven.apache.org/maven2/com/badlogicgames/gdx/${artifact.name}/maven-metadata.xml"
+                    def metaFile = new URL(metaUrl).text
+                    def latestMatcher = metaFile =~ /<latest>(.*?)<\/latest>/
+                    def releaseMatcher = metaFile =~ /<release>(.*?)<\/release>/
+                    if (latestMatcher.find()) {
+                        reportFile << "ℹ️ Última versão oficial encontrada (latest): ${latestMatcher.group(1)}\n"
+                    } else if (releaseMatcher.find()) {
+                        reportFile << "ℹ️ Última versão oficial encontrada (release): ${releaseMatcher.group(1)}\n"
+                    } else {
+                        reportFile << "❌ Nenhuma versão encontrada nos repositórios oficiais.\n"
+                    }
+                } catch(Exception e) {
+                    reportFile << "❌ Falha na Busca Profunda para ${artifact.name}: ${e.message}\n"
+                }
             }
         }
+
         if (found == 0) {
             throw new GradleException("❌ Nenhuma dependência encontrada online!")
         }
@@ -72,6 +88,7 @@ task downloadDependencies {
         def reportFile = file("$buildDir/download-report.txt")
         reportFile.text = "=== RELATÓRIO DE DOWNLOAD ===\n\n"
         def success = 0
+
         configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
             try {
                 if (artifact.file.exists()) {
@@ -88,6 +105,7 @@ task downloadDependencies {
                 reportFile << "❌ Falha no download: ${artifact.name} (${artifact.moduleVersion.id.version})\nErro: ${e.message}\n"
             }
         }
+
         if (success == 0) {
             reportFile << "\n❌ Nenhuma dependência foi baixada com sucesso.\n"
         }
