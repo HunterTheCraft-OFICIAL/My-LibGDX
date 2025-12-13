@@ -1,0 +1,87 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Núcleo
+    implementation "com.badlogicgames.gdx:gdx:1.12.0"
+
+    // Backends multiplataforma
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-backend-android:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-backend-gwt:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-backend-robovm:1.12.0"
+
+    // Nativos
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-armeabi-v7a"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-arm64-v8a"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-x86"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-x86_64"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-ios"
+    implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-gwt"
+
+    // Extras
+    implementation "com.badlogicgames.gdx:gdx-box2d:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-freetype:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-tools:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-ai:1.8.2"
+    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.1"
+    implementation "com.badlogicgames.gdx:gdx-bullet:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-video:1.12.0"
+
+    // Internos
+    implementation "com.badlogicgames.gdx:gdx-jnigen:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-setup:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-tests:1.12.0"
+}
+
+// Task para copiar todas as dependências baixadas
+task copyAllDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$buildDir/all-libs"
+}
+
+// Task para copiar cada dependência individualmente + relatório separado
+configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+    def name = artifact.name
+    tasks.register("copy_${name}", Copy) {
+        from artifact.file
+        into "$buildDir/libs-individual/${name}"
+        doLast {
+            def reportFile = file("$buildDir/libs-individual/${name}/report-${name}.txt")
+            try {
+                if (artifact.file.exists()) {
+                    reportFile.text = "STATUS: SUCESSO\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nArquivo: ${artifact.file}"
+                } else {
+                    reportFile.text = "STATUS: NÃO ENCONTRADA\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}"
+                }
+            } catch(Exception e) {
+                reportFile.text = "STATUS: FALHA NO DOWNLOAD\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nErro: ${e.message}"
+            }
+        }
+    }
+}
+
+// Task para relatório geral
+task generateReport {
+    doLast {
+        def reportFile = file("$buildDir/libs-report.txt")
+        reportFile.text = ""
+        configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            try {
+                if (artifact.file.exists()) {
+                    reportFile << "STATUS: SUCESSO\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nArquivo: ${artifact.file}\n\n"
+                } else {
+                    reportFile << "STATUS: NÃO ENCONTRADA\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\n\n"
+                }
+            } catch(Exception e) {
+                reportFile << "STATUS: FALHA NO DOWNLOAD\nDependência: ${artifact.name}\nVersão: ${artifact.moduleVersion.id.version}\nErro: ${e.message}\n\n"
+            }
+        }
+    }
+}
