@@ -34,7 +34,7 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-tools:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-ai:1.8.2"
-    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.0-SNAPSHOT" // versão snapshot
+    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.5" // última versão estável conhecida
     implementation "com.badlogicgames.gdx:gdx-bullet:1.12.0"
 
     // ⚠️ Internos/experimentais (não disponíveis no Maven Central)
@@ -56,6 +56,8 @@ task checkDependencies {
                 found++
             } else {
                 reportFile << "⚠️ Não encontrada: ${artifact.name} (${artifact.moduleVersion.id.version})\n"
+                // adicional: informar que pode haver versão mais recente
+                reportFile << "ℹ️ Sugestão: verifique se há versão mais recente no Maven Central.\n"
             }
         }
         if (found == 0) {
@@ -107,5 +109,8 @@ task generateReport {
         if (downloadReport.exists()) {
             reportFile << downloadReport.text + "\n"
         }
+
+        // adicional: mensagem final amigável
+        reportFile << "📌 Fim do relatório. Se alguma dependência não foi encontrada, verifique versões mais recentes.\n"
     }
 }
