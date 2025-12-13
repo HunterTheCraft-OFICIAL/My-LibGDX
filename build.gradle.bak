@@ -4,9 +4,6 @@ plugins {
 
 repositories {
     mavenCentral()
-    // Repositórios extras para snapshots e libs não publicadas no Maven Central
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-    maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -15,10 +12,9 @@ dependencies {
 
     // Backends multiplataforma
     implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-backend-android:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-backend-gwt:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-backend-robovm:1.12.0"
-    // ⚠️ Android backend não é resolvido como JAR, apenas AAR (para Android Studio)
-    // implementation "com.badlogicgames.gdx:gdx-backend-android:1.12.0"
 
     // Nativos
     implementation "com.badlogicgames.gdx:gdx-platform:1.12.0:natives-desktop"
@@ -34,14 +30,14 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-tools:1.12.0"
     implementation "com.badlogicgames.gdx:gdx-ai:1.8.2"
-    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.0" // versão estável
+    implementation "com.badlogicgames.gdx:gdx-controllers:2.2.1"
     implementation "com.badlogicgames.gdx:gdx-bullet:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-video:1.12.0"
 
-    // ⚠️ Internos/experimentais (não disponíveis no Maven Central)
-    // implementation "com.badlogicgames.gdx:gdx-video:1.12.0"
-    // implementation "com.badlogicgames.gdx:gdx-jnigen:1.12.0"
-    // implementation "com.badlogicgames.gdx:gdx-setup:1.12.0"
-    // implementation "com.badlogicgames.gdx:gdx-tests:1.12.0"
+    // Internos
+    implementation "com.badlogicgames.gdx:gdx-jnigen:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-setup:1.12.0"
+    implementation "com.badlogicgames.gdx:gdx-tests:1.12.0"
 }
 
 // Task para copiar todas as dependências baixadas
