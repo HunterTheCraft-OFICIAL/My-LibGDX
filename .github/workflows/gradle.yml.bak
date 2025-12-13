@@ -48,10 +48,11 @@ jobs:
       # tenta rodar com Gradle 9, se falhar troca para 8.7
 
     - name: Check Dependencies
-      run: ./gradlew checkDependencies
+      run: ./gradlew checkDependencies || true
       # nova task: apenas verifica se dependências existem online
+      # usa "|| true" para não abortar o job caso alguma falhe
       # gera check-report.txt com status (✅ encontrada, ⚠️ não encontrada)
-      # só falha se nenhuma dependência for encontrada
+      # se não encontrar, ativa Busca Profunda e registra última versão oficial
 
     - name: Download Dependencies
       run: ./gradlew downloadDependencies

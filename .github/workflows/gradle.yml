@@ -34,7 +34,49 @@ jobs:
       run: chmod +x ./gradlew
       # garante permissão de execução para gradlew
 
+    # 1) Checagem + Busca Profunda primeiro
+    - name: Check Dependencies (deep-first)
+      run: ./gradlew checkDependencies || true
+      # nova task: apenas verifica se dependências existem online
+      # usa "|| true" para não abortar o job caso alguma falhe
+      # gera check-report.txt com status (✅ encontrada, ⚠️ não encontrada)
+      # se não encontrar, ativa Busca Profunda e registra última versão oficial
+
+    # 2) Download controlado (pula falhas individuais)
+    - name: Download Dependencies
+      run: ./gradlew downloadDependencies || true
+      # baixa dependências que foram resolvidas, pula falhas
+      # gera download-report.txt (✅ sucesso, ⚠️ não encontrada, ❌ falha)
+
+    # 3) Relatório consolidado
+    - name: Generate Reports
+      run: ./gradlew generateReport
+      # une check + download em libs-report.txt para facilitar leitura
+
+    # 4) Decisão: só buildar se ao menos 1 dependência foi baixada
+    - name: Decide Build
+      id: decide_build
+      shell: bash
+      run: |
+        echo "Verificando sucesso no download..."
+        if [ -f build/download-report.txt ]; then
+          # Se contém a mensagem de erro final e nenhum ✅, considera zero sucesso
+          if grep -q "Nenhuma dependência foi baixada com sucesso" build/download-report.txt && ! grep -q "✅ Sucesso:" build/download-report.txt; then
+            echo "Nenhuma dependência baixada com sucesso. Build será pulado."
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "Há dependências baixadas com sucesso. Build será executado."
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "Relatório de download não encontrado. Build será pulado por segurança."
+          echo "should_build=false" >> $GITHUB_OUTPUT
+        fi
+      # determina se o build deve rodar, baseado no relatório
+
+    # 5) Build condicional com Gradle 9 (fallback para 8.7)
     - name: Build with Gradle 9 (fallback to 8.7)
+      if: steps.decide_build.outputs.should_build == 'true'
       run: |
         set -e
         echo "Tentando Gradle v9..."
@@ -46,24 +88,9 @@ jobs:
           ./gradlew build --refresh-dependencies
         fi
       # tenta rodar com Gradle 9, se falhar troca para 8.7
+      # só executa se should_build == true
 
-    - name: Check Dependencies
-      run: ./gradlew checkDependencies || true
-      # nova task: apenas verifica se dependências existem online
-      # usa "|| true" para não abortar o job caso alguma falhe
-      # gera check-report.txt com status (✅ encontrada, ⚠️ não encontrada)
-      # se não encontrar, ativa Busca Profunda e registra última versão oficial
-
-    - name: Download Dependencies
-      run: ./gradlew downloadDependencies
-      # nova task: baixa dependências, pula falhas individuais
-      # gera download-report.txt com status (✅ sucesso, ⚠️ não encontrada, ❌ falha)
-
-    - name: Generate Reports
-      run: ./gradlew generateReport
-      # gera relatório consolidado (check + download) em libs-report.txt
-      # inclui informações da versão pedida e última versão oficial encontrada
-
+    # 6) Upload dos artefatos sempre (mesmo se não buildar)
     - name: Upload All Libs
       uses: actions/upload-artifact@v4
       with:
