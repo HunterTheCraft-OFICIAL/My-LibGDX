@@ -1,4 +1,4 @@
-/*// html/build.gradle
+// html/build.gradle
 
 plugins {
     id 'java'

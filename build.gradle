@@ -16,7 +16,7 @@ buildscript {
 
         // Plugin GWT atualizado (para HTML backend)
         // Se não for usar HTML agora, pode comentar esta linha
-        classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:1.1.0"
+        //classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:1.1.0"
     }
 }
 

@@ -11,8 +11,12 @@ buildscript {
         maven { url "https://s01.oss.sonatype.org/content/repositories/snapshots/" }
     }
     dependencies {
+        // Plugin Android
         classpath "com.android.tools.build:gradle:8.1.4"
-        classpath "org.docstr:gwt-gradle-plugin:$gwtPluginVersion"
+
+        // Plugin GWT atualizado (para HTML backend)
+        // Se não for usar HTML agora, pode comentar esta linha
+        classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:1.1.0"
     }
 }
 
