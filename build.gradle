@@ -45,19 +45,23 @@ allprojects {
 // Configuração para subprojetos (exceto Android)
 configure(subprojects - project(':android')) {
     apply plugin: 'java-library'
-    sourceCompatibility = JavaVersion.VERSION_1_8
 
-    compileJava {
+    // Corrigido: sourceCompatibility deve ser configurado dentro das tasks JavaCompile
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
         options.incremental = true
     }
 
     // Geração automática de assets.txt
-    compileJava.doLast {
-        def assetsFolder = new File("${project.rootDir}/assets/")
-        def assetsFile = new File(assetsFolder, "assets.txt")
-        assetsFile.delete()
-        fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.each {
-            assetsFile.append(it + "\n")
+    tasks.named("compileJava").configure {
+        doLast {
+            def assetsFolder = new File("${project.rootDir}/assets/")
+            def assetsFile = new File(assetsFolder, "assets.txt")
+            assetsFile.delete()
+            fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.each {
+                assetsFile.append(it + "\n")
+            }
         }
     }
 }
