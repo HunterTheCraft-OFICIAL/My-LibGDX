@@ -1,0 +1,28 @@
+// desktop/build.gradle
+
+plugins {
+    id 'java'
+    id 'application'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+// Classe principal do launcher desktop
+mainClassName = "com.mygame.desktop.DesktopLauncher"
+
+dependencies {
+    // Backend LWJGL3
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+
+    // Dependências nativas para desktop
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-bullet-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+
+    // Controladores (joysticks/gamepads)
+    implementation "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
+
+    // Dependências do projeto core
+    implementation project(":core")
+}

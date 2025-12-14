@@ -1,0 +1,62 @@
+// build.gradle (raiz)
+
+// Configuração do próprio script
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+        gradlePluginPortal()
+        mavenLocal()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://s01.oss.sonatype.org/content/repositories/snapshots/" }
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.1.4"
+        classpath "org.docstr:gwt-gradle-plugin:$gwtPluginVersion"
+    }
+}
+
+// Configuração comum a todos os projetos
+allprojects {
+    apply plugin: "eclipse"
+    apply plugin: "idea"
+
+    idea {
+        module {
+            outputDir file('build/classes/java/main')
+            testOutputDir file('build/classes/java/test')
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        google()
+        maven { url "https://s01.oss.sonatype.org" }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://jitpack.io" }
+        mavenLocal()
+    }
+}
+
+// Configuração para subprojetos (exceto Android)
+configure(subprojects - project(':android')) {
+    apply plugin: 'java-library'
+    sourceCompatibility = JavaVersion.VERSION_1_8
+
+    compileJava {
+        options.incremental = true
+    }
+
+    // Geração automática de assets.txt
+    compileJava.doLast {
+        def assetsFolder = new File("${project.rootDir}/assets/")
+        def assetsFile = new File(assetsFolder, "assets.txt")
+        assetsFile.delete()
+        fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.each {
+            assetsFile.append(it + "\n")
+        }
+    }
+}
+
+// Nome do projeto Eclipse
+eclipse.project.name = 'MyOriginalGame-parent'
