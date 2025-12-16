@@ -26,4 +26,13 @@ dependencies {
 task copyResolvedJars(type: Copy) {
     from configurations.runtimeClasspath
     into "$projectDir/libs"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
+
+// Task para copiar os JARs resolvidos para a pasta libs
+/*
+task copyResolvedJars(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$projectDir/libs"
+}
+//*/
