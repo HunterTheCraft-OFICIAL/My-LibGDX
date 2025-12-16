@@ -1,23 +1,18 @@
-// build.gradle (raiz) [Compatível com Gradle 6.9.x]
+// build.gradle (raiz) [Compatível com Gradle 9.0.x]
 
-// Configuração do próprio script
 buildscript {
     repositories {
         mavenCentral()
         google()
-        jcenter() // ainda disponível em Gradle 6
+        gradlePluginPortal()
         mavenLocal()
     }
     dependencies {
-        // Plugin Android compatível com Gradle 6
-        classpath "com.android.tools.build:gradle:4.2.2"
-
-        // Plugin GWT (se usar HTML backend, pode comentar se não precisar)
-        //classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:1.0.0"
+        // Plugin Android compatível com Gradle 9
+        classpath "com.android.tools.build:gradle:8.1.4"
     }
 }
 
-// Configuração comum a todos os projetos
 allprojects {
     apply plugin: "eclipse"
     apply plugin: "idea"
@@ -32,35 +27,31 @@ allprojects {
     repositories {
         mavenCentral()
         google()
-        jcenter()
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://jitpack.io" }
         mavenLocal()
     }
 }
 
-// Configuração para subprojetos (exceto Android)
 configure(subprojects - project(':android')) {
     apply plugin: 'java-library'
 
-    // Sintaxe antiga ainda funciona no Gradle 6
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-
-    compileJava {
+    // Gradle 9 exige sintaxe moderna
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
         options.incremental = true
     }
 
-    // Geração automática de assets.txt
-    compileJava.doLast {
-        def assetsFolder = new File("${project.rootDir}/assets/")
-        def assetsFile = new File(assetsFolder, "assets.txt")
-        assetsFile.delete()
-        fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.each {
-            assetsFile.append(it + "\n")
+    tasks.named("compileJava").configure {
+        doLast {
+            def assetsFolder = new File("${project.rootDir}/assets/")
+            def assetsFile = new File(assetsFolder, "assets.txt")
+            assetsFile.delete()
+            fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.each {
+                assetsFile.append(it + "\n")
+            }
         }
     }
 }
 
-// Nome do projeto Eclipse
 eclipse.project.name = 'MyOriginalGame-parent'
