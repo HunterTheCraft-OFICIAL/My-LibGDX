@@ -1,0 +1,57 @@
+// build.gradle (raiz) [Compatível com Gradle 9.0.x]
+
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+        gradlePluginPortal()
+        mavenLocal()
+    }
+    dependencies {
+        // Plugin Android compatível com Gradle 9
+        classpath "com.android.tools.build:gradle:8.1.4"
+    }
+}
+
+allprojects {
+    apply plugin: "eclipse"
+    apply plugin: "idea"
+
+    idea {
+        module {
+            outputDir file('build/classes/java/main')
+            testOutputDir file('build/classes/java/test')
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        google()
+        maven { url "https://jitpack.io" }
+        mavenLocal()
+    }
+}
+
+configure(subprojects - project(':android')) {
+    apply plugin: 'java-library'
+
+    // Gradle 9 exige sintaxe moderna
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        options.incremental = true
+    }
+
+    tasks.named("compileJava").configure {
+        doLast {
+            def assetsFolder = new File("${project.rootDir}/assets/")
+            def assetsFile = new File(assetsFolder, "assets.txt")
+            assetsFile.delete()
+            fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.each {
+                assetsFile.append(it + "\n")
+            }
+        }
+    }
+}
+
+eclipse.project.name = 'MyOriginalGame-parent'
