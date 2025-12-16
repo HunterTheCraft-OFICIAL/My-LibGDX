@@ -42,6 +42,16 @@ dependencies {
 }
 
 // Task para copiar os JARs resolvidos para a pasta libs
+afterEvaluate {
+    task copyResolvedJars(type: Copy) {
+        from configurations.debugRuntimeClasspath
+        from configurations.releaseRuntimeClasspath
+        into "$projectDir/libs"
+    }
+}
+
+// Task para copiar os JARs resolvidos para a pasta libs
+/*
 task copyResolvedJars(type: Copy) {
     from configurations.debugRuntimeClasspath
     into "$projectDir/libs"
