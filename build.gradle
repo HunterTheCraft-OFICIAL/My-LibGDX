@@ -1,0 +1,21 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.1.0"
+    }
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
+ext {
+    // versão estável mais recente
+    gdxVersion = '1.12.1'   
+}
