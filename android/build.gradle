@@ -22,6 +22,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    // Rede de segurança contra duplicados de classes/recursos
+    packagingOptions {
+        resources {
+            // evita falhas em mergeDebugJavaResource
+            pickFirst "com/badlogic/gdx/**"
+            pickFirst "META-INF/*"
+        }
+    }
 }
 
 dependencies {
@@ -49,35 +58,3 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 }
-
-// Task para copiar os JARs resolvidos para a pasta libs
-/*
-afterEvaluate {
-    task copyResolvedJars(type: Copy) {
-        from configurations.debugRuntimeClasspath
-        from configurations.releaseRuntimeClasspath
-        into "$projectDir/libs"
-    }
-}
-
-// Task para copiar os JARs resolvidos para a pasta libs
-/*
-task copyResolvedJars(type: Copy) {
-    from configurations.debugRuntimeClasspath
-    into "$projectDir/libs"
-}
-
-/*
-task copyResolvedJars(type: Copy) {
-    from configurations.debugRuntimeClasspath
-    from configurations.releaseRuntimeClasspath
-    into "$projectDir/libs"
-}
-
-// Task para copiar os JARs resolvidos para a pasta libs
-/*
-task copyResolvedJars(type: Copy) {
-    from configurations.runtimeClasspath
-    into "$projectDir/libs"
-}
-//*/
