@@ -21,3 +21,9 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
     implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
 }
+
+// Task para copiar os JARs resolvidos para a pasta libs
+task copyResolvedJars(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$projectDir/libs"
+}

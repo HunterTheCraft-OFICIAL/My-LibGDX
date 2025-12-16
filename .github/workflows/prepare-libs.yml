@@ -32,26 +32,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Copia apenas os JARs necessários para cada módulo
-      - name: Copy Gradle libs into repo
+      # Executa as tasks copyResolvedJars de cada módulo
+      - name: Copy resolved JARs into libs
         run: |
-          mkdir -p core/libs desktop/libs android/libs
-
-          # Core
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx/*/*.jar core/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-freetype/*/*.jar core/libs/ || true
-
-          # Desktop
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-backend-lwjgl3/*/*.jar desktop/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-desktop.jar desktop/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-freetype-platform/*/*/natives-desktop.jar desktop/libs/ || true
-
-          # Android
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-backend-android/*/*.jar android/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-armeabi-v7a.jar android/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-arm64-v8a.jar android/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-x86.jar android/libs/ || true
-          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-x86_64.jar android/libs/ || true
+          ./gradlew core:copyResolvedJars
+          ./gradlew desktop:copyResolvedJars
+          ./gradlew android:copyResolvedJars
 
       - name: Upload prepared repo with libs
         uses: actions/upload-artifact@v4
