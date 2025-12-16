@@ -1,7 +1,8 @@
 name: Gradle Ultimate Workflow
 
 on:
-  workflow_dispatch:   # <-- ativação manual
+  # ↓ ativação manual ↓
+  workflow_dispatch:   
 
 jobs:
   ultimate:
@@ -41,6 +42,17 @@ jobs:
           ./gradlew core:copyResolvedJars
           ./gradlew desktop:copyResolvedJars
           ./gradlew android:copyResolvedJars
+
+      # 2️⃣b Limpa duplicados (gdx.jar e gdx-freetype.jar só devem existir no core)
+      - name: Clean duplicated libs
+        run: |
+          # Android não precisa de gdx.jar nem gdx-freetype.jar
+          rm -f android/libs/gdx-*.jar
+          rm -f android/libs/gdx-freetype*.jar
+
+          # Desktop idem: só precisa dos natives
+          rm -f desktop/libs/gdx-*.jar
+          rm -f desktop/libs/gdx-freetype*.jar
 
       # 3️⃣ Compila Desktop JAR
       - name: Build desktop artifact

@@ -39,6 +39,17 @@ jobs:
           ./gradlew desktop:copyResolvedJars
           ./gradlew android:copyResolvedJars
 
+      # Remove duplicados: gdx.jar e gdx-freetype.jar devem existir só no core
+      - name: Clean duplicated libs
+        run: |
+          # Android não precisa de gdx.jar nem gdx-freetype.jar
+          rm -f android/libs/gdx-*.jar
+          rm -f android/libs/gdx-freetype*.jar
+
+          # Desktop idem: só precisa dos natives
+          rm -f desktop/libs/gdx-*.jar
+          rm -f desktop/libs/gdx-freetype*.jar
+
       - name: Upload prepared repo with libs
         uses: actions/upload-artifact@v4
         with:
