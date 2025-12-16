@@ -1,0 +1,93 @@
+name: Gradle Versions Snapshot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gradle6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Generate Gradle 6 wrapper
+        run: ./gradlew wrapper --gradle-version 6.9.4
+      - name: Refresh dependencies
+        run: ./gradlew --refresh-dependencies
+      - name: Upload Gradle 6 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle6-artifacts
+          path: |
+            gradlew
+            gradlew.bat
+            gradle/wrapper/
+            ~/.gradle/caches
+
+  gradle7:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Generate Gradle 7 wrapper
+        run: ./gradlew wrapper --gradle-version 7.6.3
+      - name: Refresh dependencies
+        run: ./gradlew --refresh-dependencies
+      - name: Upload Gradle 7 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle7-artifacts
+          path: |
+            gradlew
+            gradlew.bat
+            gradle/wrapper/
+            ~/.gradle/caches
+
+  gradle8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Generate Gradle 8 wrapper
+        run: ./gradlew wrapper --gradle-version 8.10.2
+      - name: Refresh dependencies
+        run: ./gradlew --refresh-dependencies
+      - name: Upload Gradle 8 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle8-artifacts
+          path: |
+            gradlew
+            gradlew.bat
+            gradle/wrapper/
+            ~/.gradle/caches
+
+  gradle9:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Generate Gradle 9 wrapper
+        run: ./gradlew wrapper --gradle-version 9.0
+      - name: Refresh dependencies
+        run: ./gradlew --refresh-dependencies
+      - name: Upload Gradle 9 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle9-artifacts
+          path: |
+            gradlew
+            gradlew.bat
+            gradle/wrapper/
+            ~/.gradle/caches
