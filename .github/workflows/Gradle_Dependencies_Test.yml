@@ -32,6 +32,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 4. Baixar dependências (sem compilar ainda)
+      # 4. Garantir permissão de execução para gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. Baixar dependências (sem compilar ainda)
       - name: Download dependencies
         run: ./gradlew dependencies
