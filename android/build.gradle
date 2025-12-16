@@ -41,7 +41,17 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
 }
 
+afterEvaluate {
+    task copyResolvedJars(type: Copy) {
+        from configurations.findByName("debugRuntimeClasspath") ?: files()
+        from configurations.findByName("releaseRuntimeClasspath") ?: files()
+        into "$projectDir/libs"
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+
 // Task para copiar os JARs resolvidos para a pasta libs
+/*
 afterEvaluate {
     task copyResolvedJars(type: Copy) {
         from configurations.debugRuntimeClasspath
