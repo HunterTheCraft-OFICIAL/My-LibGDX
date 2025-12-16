@@ -1,14 +1,13 @@
-name: Gradle Build Artifact
+name: Gradle Prepare Libs
 
 on:
-  workflow_run:  
-    # <-- antes era "Gradle Dependencies Test"
-    workflows: ["Gradle Prepare Libs"]     
+  workflow_run:
+    workflows: ["Gradle Dependencies Test"]
     types:
       - completed
 
 jobs:
-  build:
+  prepare-libs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
@@ -33,22 +32,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Build Desktop JAR
-      - name: Build desktop artifact
-        run: ./gradlew desktop:jar
+      # Copia todas as libs baixadas para dentro do repositório
+      - name: Copy Gradle libs into repo
+        run: |
+          mkdir -p core/libs desktop/libs android/libs
+          cp -r ~/.gradle/caches/modules-2/files-2.1/* core/libs/
+          cp -r ~/.gradle/caches/modules-2/files-2.1/* desktop/libs/
+          cp -r ~/.gradle/caches/modules-2/files-2.1/* android/libs/
 
-      - name: Upload desktop artifact
+      - name: Upload prepared repo with libs
         uses: actions/upload-artifact@v4
         with:
-          name: My-LibGDX-Desktop
-          path: desktop/build/libs/*.jar
-
-      # Build Android APK (Debug)
-      - name: Build android artifact
-        run: ./gradlew android:assembleDebug
-
-      - name: Upload android artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: My-LibGDX-Android
-          path: android/build/outputs/apk/debug/*.apk
+          name: My-LibGDX-WithLibs
+          path: .
