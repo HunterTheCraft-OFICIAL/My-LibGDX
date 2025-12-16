@@ -9,15 +9,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout do repositório
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Configuração do JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # 3️⃣ Cache do Gradle para acelerar builds
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -26,24 +29,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      # 4️⃣ Permissão de execução para o gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 1️⃣ Resolve dependências
+      # 5️⃣ Resolve dependências de todos os módulos
       - name: Resolve dependencies (all modules)
         run: |
           ./gradlew core:dependencies
           ./gradlew desktop:dependencies
           ./gradlew android:dependencies
 
-      # 2️⃣ Copia os JARs resolvidos para cada módulo usando as tasks
+      # 6️⃣ Copia os JARs resolvidos para cada módulo usando as tasks
       - name: Copy resolved JARs into libs
         run: |
           ./gradlew core:copyResolvedJars
           ./gradlew desktop:copyResolvedJars
           ./gradlew android:copyResolvedJars
 
-      # 2️⃣b Limpa duplicados (gdx.jar e gdx-freetype.jar só devem existir no core)
+      # 7️⃣ Limpa duplicados (gdx.jar e gdx-freetype.jar só devem existir no core)
       - name: Clean duplicated libs
         run: |
           # Android não precisa de gdx.jar nem gdx-freetype.jar
@@ -54,7 +58,7 @@ jobs:
           rm -f desktop/libs/gdx-*.jar
           rm -f desktop/libs/gdx-freetype*.jar
 
-      # 3️⃣ Compila Desktop JAR
+      # 8️⃣ Compila Desktop JAR
       - name: Build desktop artifact
         run: ./gradlew desktop:jar
 
@@ -64,7 +68,7 @@ jobs:
           name: My-LibGDX-Desktop
           path: desktop/build/libs/*.jar
 
-      # 4️⃣ Compila Android APK
+      # 9️⃣ Compila Android APK
       - name: Build android artifact
         run: ./gradlew android:assembleDebug
 
@@ -74,7 +78,7 @@ jobs:
           name: My-LibGDX-Android
           path: android/build/outputs/apk/debug/*.apk
 
-      # 5️⃣ Cria zip completo do repositório pós-build
+      # 🔟 Cria zip completo do repositório pós-build
       - name: Create repository zip
         run: zip -r My-LibGDX-Repo.zip . -x "*.git*"
 
@@ -84,7 +88,7 @@ jobs:
           name: My-LibGDX-Repo-Zip
           path: My-LibGDX-Repo.zip
 
-      # 6️⃣ Cria zip do cache Gradle bruto
+      # 1️⃣1️⃣ Cria zip do cache Gradle bruto
       - name: Copy Gradle cache
         run: |
           mkdir gradle-cache-copy
