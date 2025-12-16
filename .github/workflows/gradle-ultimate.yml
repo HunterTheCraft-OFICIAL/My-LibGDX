@@ -36,13 +36,26 @@ jobs:
           ./gradlew desktop:dependencies
           ./gradlew android:dependencies
 
-      # 2️⃣ Copia libs para dentro do projeto
+      # 2️⃣ Copia apenas os JARs necessários para cada módulo
       - name: Copy Gradle libs into repo
         run: |
           mkdir -p core/libs desktop/libs android/libs
-          cp -r ~/.gradle/caches/modules-2/files-2.1/* core/libs/
-          cp -r ~/.gradle/caches/modules-2/files-2.1/* desktop/libs/
-          cp -r ~/.gradle/caches/modules-2/files-2.1/* android/libs/
+
+          # Core
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx/*/*.jar core/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-freetype/*/*.jar core/libs/ || true
+
+          # Desktop
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-backend-lwjgl3/*/*.jar desktop/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-desktop.jar desktop/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-freetype-platform/*/*/natives-desktop.jar desktop/libs/ || true
+
+          # Android
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-backend-android/*/*.jar android/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-armeabi-v7a.jar android/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-arm64-v8a.jar android/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-x86.jar android/libs/ || true
+          cp ~/.gradle/caches/modules-2/files-2.1/com.badlogicgames.gdx/gdx-platform/*/*/natives-x86_64.jar android/libs/ || true
 
       # 3️⃣ Compila Desktop JAR
       - name: Build desktop artifact

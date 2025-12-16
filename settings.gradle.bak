@@ -1,9 +1,9 @@
 // settings.gradle [Gradle v8.10.2]
 
-// Define o nome raiz do projeto
 rootProject.name = "My-LibGDX"
 
-// Inclui todos os módulos
+// Inclui todos os módulos do projeto (por enquanto desativado)
+
 include "core"
 include "desktop"
 include "android"
