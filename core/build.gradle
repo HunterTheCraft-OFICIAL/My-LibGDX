@@ -1,9 +1,14 @@
+// core/build.gradle [Gradle v8.10.2]
+
 plugins {
     id 'java-library'
-    //id 'java'
 }
 
 dependencies {
+    // Inclui todas as libs locais copiadas para core/libs
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Dependências remotas via Maven Central (fallback)
     api "com.badlogicgames.gdx:gdx:$gdxVersion"
     api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
 }
