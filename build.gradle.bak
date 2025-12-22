@@ -173,7 +173,7 @@ project(":ios") {
 }
 
 project(":html") {
-    apply plugin: "java"
+    apply plugin: "java-base"
     apply plugin: "gwt"
     apply plugin: "org.gretty"
 

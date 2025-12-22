@@ -172,24 +172,3 @@ project(":ios") {
     }
 }
 
-project(":html") {
-    apply plugin: "java-base"
-    apply plugin: "gwt"
-    apply plugin: "org.gretty"
-
-    dependencies {
-        implementation project(":core")
-        implementation "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion"
-        implementation "com.badlogicgames.gdx:gdx:$gdxVersion:sources"
-        implementation "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion:sources"
-        implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion:sources"
-        implementation "com.badlogicgames.gdx:gdx-box2d-gwt:$gdxVersion:sources"
-        implementation "com.badlogicgames.ashley:ashley:$ashleyVersion:sources"
-        implementation "com.badlogicgames.gdx:gdx-ai:$aiVersion:sources"
-        implementation "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion:sources"
-        implementation "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion"
-        implementation "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion:sources"
-        implementation "com.badlogicgames.gdxpay:gdx-pay:$gdxPayVersion:sources"
-        implementation "com.badlogicgames.gdxpay:gdx-pay-client:$gdxPayVersion:sources"
-    }
-}
