@@ -46,16 +46,9 @@ allprojects {
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
     }
+ }
 
-    // // ✅ Correção: forçar versão de commons-compress para evitar NoSuchMethodError em ZipFile
-// //    configurations.all {
-    // allprojects {
-    // configurations.all {
-        // resolutionStrategy {
-            // force 'org.apache.commons:commons-compress:1.21'
-        // }
-    // }
-// } // Não deu certo de nenhum jeito 
+// Tentativa antiga de forçar commons-compress (removida)
 
 project(":core") {
     apply plugin: "java-library"
