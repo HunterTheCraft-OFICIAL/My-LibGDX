@@ -154,8 +154,3 @@ project(":html") {
         implementation "com.badlogicgames.gdxpay:gdx-pay-client:$gdxPayVersion:sources"
     }
 }
-
-//
-
-com.android.tools.build:gradle:8.0.2'
-        //classpath 'com.android.tools.build:gradle:7.4.2' 
