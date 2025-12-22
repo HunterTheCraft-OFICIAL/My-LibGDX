@@ -8,25 +8,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ JDK compatível
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
 
+      # 3️⃣ Permissão gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Testa todas as dependências sem compilar
+      # 4️⃣ Rodar verificação de dependências
       - name: Verify dependencies
-        run: ./gradlew dependencies --stacktrace
+        run: |
+          set +e
+          ./gradlew dependencies > dependency-report.txt 2>&1
+          EXIT_CODE=$?
+          echo "### Dependency Check Summary" > summary.md
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Todas as dependências foram resolvidas com sucesso." >> summary.md
+          else
+            echo "❌ Falha ao resolver algumas dependências." >> summary.md
+            echo "" >> summary.md
+            echo "Veja detalhes em dependency-report.txt" >> summary.md
+          fi
+          exit $EXIT_CODE
 
-      # Salva relatório das dependências
+      # 5️⃣ Upload do relatório detalhado
       - name: Upload dependency report
         uses: actions/upload-artifact@v4
         with:
           name: Dependency-Report
-          path: build/reports
+          path: dependency-report.txt
+
+      # 6️⃣ Upload do sumário
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dependency-Summary
+          path: summary.md
