@@ -1,0 +1,75 @@
+name: Gradle Project Build & Package
+
+on:
+  workflow_dispatch:   # execução manual
+
+jobs:
+  build-all:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout do repositório
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configuração do JDK (ajuste conforme versão do Gradle/AGP)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3️⃣ Cache Gradle para acelerar builds
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4️⃣ Permissão de execução para gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5️⃣ Compilar todos os módulos
+      - name: Build all modules
+        run: ./gradlew build
+
+      # 6️⃣ Artefato Desktop (JAR)
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyGdx-Desktop
+          path: desktop/build/libs/*.jar
+
+      # 7️⃣ Artefato Android (APK)
+      - name: Upload android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyGdx-Android
+          path: android/build/outputs/apk/debug/*.apk
+
+      # 8️⃣ Artefato HTML (se aplicável)
+      - name: Upload html artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyGdx-HTML
+          path: html/build/dist/**
+
+      # 9️⃣ Artefato iOS (se aplicável)
+      - name: Upload ios artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyGdx-iOS
+          path: ios/build/**
+
+      # 🔟 Compactar projeto pós-build (com libs baixadas)
+      - name: Create compact project zip
+        run: zip -r MyGdx-Project.zip . -x "*.git*"
+
+      - name: Upload compact project artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyGdx-Project-Zip
+          path: MyGdx-Project.zip
