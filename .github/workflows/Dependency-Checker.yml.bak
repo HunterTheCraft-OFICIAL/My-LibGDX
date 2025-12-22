@@ -31,9 +31,13 @@ jobs:
           else
             echo "❌ Algumas dependências não foram resolvidas." >> summary.md
             echo "" >> summary.md
+            echo "### Sugestões para diagnóstico:" >> summary.md
+            echo "- Execute com \`--stacktrace\` para ver a pilha completa." >> summary.md
+            echo "- Execute com \`--info\` ou \`--debug\` para mais detalhes." >> summary.md
+            echo "- Execute com \`--scan\` para insights completos." >> summary.md
+            echo "" >> summary.md
             echo "Veja detalhes em dependency-report.txt" >> summary.md
           fi
-          # salvar exit_code para uso posterior
           echo "exit_code=$EXIT_CODE" >> $GITHUB_ENV
 
       - name: Upload dependency report
