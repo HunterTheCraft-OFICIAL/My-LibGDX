@@ -1,5 +1,10 @@
 // ./html/build.gradle
 
+plugins {
+    id "java-library"
+    id "eclipse"
+}
+
 gwt {
     gwtVersion = '2.8.2' // Should match the gwt version used for building the gwt backend
     maxHeapSize = "1G"   // Default 256m is not enough for gwt compiler. GWT is HUNGRY
@@ -79,11 +84,6 @@ task addSource {
 
 tasks.compileGwt.dependsOn(addSource)
 tasks.draftCompileGwt.dependsOn(addSource)
-
-plugins {
-    id "java-library"
-    id "eclipse"
-}
 
 java {
     toolchain {

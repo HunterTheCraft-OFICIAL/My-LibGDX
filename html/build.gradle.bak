@@ -2,17 +2,17 @@
 
 gwt {
     gwtVersion = '2.8.2' // Should match the gwt version used for building the gwt backend
-    maxHeapSize = "1G" // Default 256m is not enough for gwt compiler. GWT is HUNGRY
+    maxHeapSize = "1G"   // Default 256m is not enough for gwt compiler. GWT is HUNGRY
     minHeapSize = "1G"
 
     src = files(file("src/")) // Needs to be in front of "modules" below.
     modules 'com.mygdx.game.GdxDefinition'
     devModules 'com.mygdx.game.GdxDefinitionSuperdev'
-    project.webAppDirName = 'webapp'
+    // project.webAppDirName = 'webapp'  // ❌ removido, não existe mais no Gradle 8
 
     compiler {
-        strict = true;
-        disableCastChecking = true;
+        strict = true
+        disableCastChecking = true
     }
 }
 
@@ -41,14 +41,8 @@ task startHttpServer() {
 }
 
 task beforeRun(type: AppBeforeIntegrationTestTask, dependsOn: startHttpServer) {
-    // The next line allows ports to be reused instead of
-    // needing a process to be manually terminated.
     file("build/TEMP_PORTS.properties").delete()
-    // Somewhat of a hack; uses Gretty's support for wrapping a task in
-    // a start and then stop of a Jetty server that serves files while
-    // also running the SuperDev code server.
     integrationTestTask 'superDev'
-
     interactive false
 }
 
@@ -86,7 +80,27 @@ task addSource {
 tasks.compileGwt.dependsOn(addSource)
 tasks.draftCompileGwt.dependsOn(addSource)
 
-sourceCompatibility = 1.8
-sourceSets.main.java.srcDirs = ["src/"]
+plugins {
+    id "java-library"
+    id "eclipse"
+}
 
-eclipse.project.name = appName + "-html"
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17) // ✅ usa JDK 17
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/"]
+        }
+    }
+}
+
+eclipse {
+    project {
+        name = appName + "-html"
+    }
+}
