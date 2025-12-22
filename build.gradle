@@ -128,7 +128,7 @@ project(":ios") {
 project(":html") {
     apply plugin: "java-library"
     apply plugin: "gwt"
-    apply plugin: "war"
+    // apply plugin: "war"   // ❌ remover se não precisar gerar WAR
     apply plugin: "org.gretty"
 
     dependencies {
