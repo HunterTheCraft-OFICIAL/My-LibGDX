@@ -6,11 +6,11 @@ plugins {
 }
 
 gwt {
-    gwtVersion = '2.8.2' // Should match the gwt version used for building the gwt backend
-    maxHeapSize = "1G"   // Default 256m is not enough for gwt compiler. GWT is HUNGRY
+    gwtVersion = '2.8.2' // Deve coincidir com a versão usada no backend GWT
+    maxHeapSize = "1G"   // Default 256m é pouco para o compilador GWT
     minHeapSize = "1G"
 
-    src = files(file("src/")) // Needs to be in front of "modules" below.
+    src = files(file("src/")) // Precisa vir antes de "modules"
     modules 'com.mygdx.game.GdxDefinition'
     devModules 'com.mygdx.game.GdxDefinitionSuperdev'
     // project.webAppDirName = 'webapp'  // ❌ removido, não existe mais no Gradle 8
@@ -84,6 +84,22 @@ task addSource {
 
 tasks.compileGwt.dependsOn(addSource)
 tasks.draftCompileGwt.dependsOn(addSource)
+
+dependencies {
+    implementation project(":core")
+    api "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion"
+    api "com.badlogicgames.gdx:gdx:$gdxVersion:sources"
+    api "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion:sources"
+    api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion:sources"
+    api "com.badlogicgames.gdx:gdx-box2d-gwt:$gdxVersion:sources"
+    api "com.badlogicgames.ashley:ashley:$ashleyVersion:sources"
+    api "com.badlogicgames.gdx:gdx-ai:$aiVersion:sources"
+    api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion:sources"
+    api "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion"
+    api "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion:sources"
+    implementation "com.badlogicgames.gdxpay:gdx-pay:$gdxPayVersion:sources"
+    implementation "com.badlogicgames.gdxpay:gdx-pay-client:$gdxPayVersion:sources"
+}
 
 java {
     toolchain {
