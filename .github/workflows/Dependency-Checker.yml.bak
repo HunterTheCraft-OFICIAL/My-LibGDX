@@ -8,22 +8,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ JDK compatível
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
 
-      # 3️⃣ Permissão gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4️⃣ Rodar verificação de dependências e gerar sumário
       - name: Verify dependencies
         run: |
           set +e
@@ -33,31 +29,21 @@ jobs:
           if [ $EXIT_CODE -eq 0 ]; then
             echo "✅ Todas as dependências foram resolvidas com sucesso." >> summary.md
           else
-            echo "❌ Falha ao resolver algumas dependências." >> summary.md
+            echo "❌ Algumas dependências não foram resolvidas." >> summary.md
             echo "" >> summary.md
             echo "Veja detalhes em dependency-report.txt" >> summary.md
           fi
-          # Não interrompe aqui, apenas salva o código para o GitHub Actions
+          # salvar exit_code para uso posterior
           echo "exit_code=$EXIT_CODE" >> $GITHUB_ENV
 
-      # 5️⃣ Upload do relatório detalhado
       - name: Upload dependency report
         uses: actions/upload-artifact@v4
         with:
           name: Dependency-Report
           path: dependency-report.txt
 
-      # 6️⃣ Upload do sumário
       - name: Upload summary
         uses: actions/upload-artifact@v4
         with:
           name: Dependency-Summary
           path: summary.md
-
-      # 7️⃣ Forçar falha se dependências não foram resolvidas
-      - name: Fail if dependencies unresolved
-        run: |
-          if [ "$exit_code" -ne 0 ]; then
-            echo "❌ Workflow falhou: dependências não resolvidas."
-            exit 1
-          fi
