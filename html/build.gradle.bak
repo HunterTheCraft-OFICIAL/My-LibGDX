@@ -1,7 +1,6 @@
 // ./html/build.gradle
 
 plugins {
-//    id "java-library"
     id "java"
     id "eclipse"
 }
