@@ -8,3 +8,9 @@ rootProject.name = "My-LibGDX"
 //include "desktop"
 //include "android"
 //include "html"
+
+include 'core'
+include 'desktop'
+include 'android'
+include 'ios'
+include 'html'

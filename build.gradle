@@ -1,4 +1,4 @@
-// build.gradle [Gradle v7.6.3]
+// build.gradle [Gradle v8.10.2]
 buildscript {
     repositories {
         mavenLocal()
