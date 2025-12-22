@@ -1,4 +1,4 @@
-// settings.gradle [Gradle v7.6.3]
+// settings.gradle [Gradle v8.10.2]
 
 rootProject.name = "My-LibGDX"
 
@@ -13,4 +13,4 @@ include 'core'
 include 'desktop'
 include 'android'
 include 'ios'
-include 'html'
+//include 'html'
