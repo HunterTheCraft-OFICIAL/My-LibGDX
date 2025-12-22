@@ -11,7 +11,8 @@ buildscript {
     dependencies {
         classpath 'org.wisepersist:gwt-gradle-plugin:1.1.0'
         //classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
-        classpath 'org.gretty:gretty:3.0.6'
+        classpath 'org.gretty:gretty:4.0.3'
+        //classpath 'org.gretty:gretty:3.0.6'
         //classpath 'org.gretty:gretty:3.0.2' // ❌ versão inexistente, substituída por 3.0.6
         classpath 'com.android.tools.build:gradle:8.0.2'
         // ❌ ainda puxava commons-compress antigo
@@ -172,23 +173,22 @@ project(":ios") {
 }
 
 project(":html") {
-    apply plugin: "java-library"
+    apply plugin: "java"
     apply plugin: "gwt"
-    // apply plugin: "war"   // ❌ remover se não precisar gerar WAR
     apply plugin: "org.gretty"
 
     dependencies {
         implementation project(":core")
-        api "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion"
-        api "com.badlogicgames.gdx:gdx:$gdxVersion:sources"
-        api "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion:sources"
-        api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion:sources"
-        api "com.badlogicgames.gdx:gdx-box2d-gwt:$gdxVersion:sources"
-        api "com.badlogicgames.ashley:ashley:$ashleyVersion:sources"
-        api "com.badlogicgames.gdx:gdx-ai:$aiVersion:sources"
-        api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion:sources"
-        api "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion"
-        api "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion:sources"
+        implementation "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion"
+        implementation "com.badlogicgames.gdx:gdx:$gdxVersion:sources"
+        implementation "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion:sources"
+        implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion:sources"
+        implementation "com.badlogicgames.gdx:gdx-box2d-gwt:$gdxVersion:sources"
+        implementation "com.badlogicgames.ashley:ashley:$ashleyVersion:sources"
+        implementation "com.badlogicgames.gdx:gdx-ai:$aiVersion:sources"
+        implementation "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion:sources"
+        implementation "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion"
+        implementation "com.badlogicgames.gdx-controllers:gdx-controllers-gwt:$gdxControllersVersion:sources"
         implementation "com.badlogicgames.gdxpay:gdx-pay:$gdxPayVersion:sources"
         implementation "com.badlogicgames.gdxpay:gdx-pay-client:$gdxPayVersion:sources"
     }

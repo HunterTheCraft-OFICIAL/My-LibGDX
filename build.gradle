@@ -11,7 +11,8 @@ buildscript {
     dependencies {
         classpath 'org.wisepersist:gwt-gradle-plugin:1.1.0'
         //classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
-        classpath 'org.gretty:gretty:3.0.6'
+        classpath 'org.gretty:gretty:4.0.3'
+        //classpath 'org.gretty:gretty:3.0.6'
         //classpath 'org.gretty:gretty:3.0.2' // ❌ versão inexistente, substituída por 3.0.6
         classpath 'com.android.tools.build:gradle:8.0.2'
         // ❌ ainda puxava commons-compress antigo
@@ -172,7 +173,7 @@ project(":ios") {
 }
 
 project(":html") {
-    apply plugin: "java"
+    apply plugin: "java-base"
     apply plugin: "gwt"
     apply plugin: "org.gretty"
 
