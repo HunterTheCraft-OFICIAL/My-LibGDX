@@ -9,7 +9,8 @@ buildscript {
     }
     
     dependencies {
-        classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
+        classpath 'org.wisepersist:gwt-gradle-plugin:1.1.0'
+        //classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
         classpath 'org.gretty:gretty:3.0.6'
         //classpath 'org.gretty:gretty:3.0.2' // ❌ versão inexistente, substituída por 3.0.6
         classpath 'com.android.tools.build:gradle:8.0.2'
@@ -50,7 +51,51 @@ allprojects {
 
 // Tentativa antiga de forçar commons-compress (removida)
 
-project(":core") {
+project(":android") {
+    apply plugin: "com.android.application"
+
+    // ✅ Bloco obrigatório no AGP 8.x
+    android {
+        compileSdkVersion 34   // ou a versão que você estiver usando
+        defaultConfig {
+            applicationId "com.hunterthecraft.stresstest"  // ajuste para o seu package real
+            minSdkVersion 21
+            targetSdkVersion 34
+            versionCode 1
+            versionName "1.0"
+        }
+
+        namespace "com.hunterthecraft.stresstest"  // ✅ novo campo exigido pelo AGP
+    }
+
+    configurations { natives }
+
+    dependencies {
+        implementation project(":core")
+        api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.ashley:ashley:$ashleyVersion"
+        api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+        api "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion"
+        implementation "com.google.android.gms:play-services-ads:$adsVersion"
+        implementation "com.badlogicgames.gdxpay:gdx-pay-android-googlebilling:$gdxPayVersion"
+    }
+}
+
+/*project(":core") {
     apply plugin: "java-library"
 
     dependencies {
@@ -65,6 +110,7 @@ project(":core") {
         implementation "com.github.kendaozinho:libgdx-common:$libgdxCommonVersion"
     }
 }
+//*/
 
 project(":desktop") {
     apply plugin: "java-library"

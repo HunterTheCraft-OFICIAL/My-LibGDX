@@ -1,8 +1,9 @@
 // ./html/build.gradle
 
 plugins {
-    id "java-base"
+    id "java"
     id "eclipse"
+    //id "org.wisepersist.gwt" version "1.1.0" // versão mais nova
 }
 
 gwt {
