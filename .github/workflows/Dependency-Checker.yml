@@ -8,47 +8,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ JDK compatível
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
 
+      # 3️⃣ Permissão gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Verify dependencies
+      # 4️⃣ Rodar Gradle com diagnósticos
+      - name: Run Gradle with diagnostics
         run: |
           set +e
-          ./gradlew dependencies > dependency-report.txt 2>&1
+          ./gradlew build --stacktrace --info --debug > full-log.txt 2>&1
           EXIT_CODE=$?
-          echo "### Dependency Check Summary" > summary.md
+          echo "### Dependency Check Summary" >> $GITHUB_STEP_SUMMARY
           if [ $EXIT_CODE -eq 0 ]; then
-            echo "✅ Todas as dependências foram resolvidas com sucesso." >> summary.md
+            echo "✅ Build configurado sem erros críticos." >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Algumas dependências não foram resolvidas." >> summary.md
-            echo "" >> summary.md
-            echo "### Detalhes adicionais coletados:" >> summary.md
-            echo "- Rodando novamente com --stacktrace, --info e --debug" >> summary.md
-            ./gradlew dependencies --stacktrace >> dependency-report.txt 2>&1
-            ./gradlew dependencies --info >> dependency-report.txt 2>&1
-            ./gradlew dependencies --debug >> dependency-report.txt 2>&1
-            echo "" >> summary.md
-            echo "Veja detalhes completos em dependency-report.txt" >> summary.md
+            echo "❌ Foram encontrados problemas durante a configuração." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Erros detectados:" >> $GITHUB_STEP_SUMMARY
+            grep -E "FAILURE|Could not find|Minimum supported Gradle version|Exception" full-log.txt | head -50 >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Sugestões automáticas:" >> $GITHUB_STEP_SUMMARY
+            echo "- Execute com \`--scan\` para insights completos." >> $GITHUB_STEP_SUMMARY
+            echo "- Verifique dependências inexistentes (ex.: Gretty 3.0.2)." >> $GITHUB_STEP_SUMMARY
+            echo "- Ajuste Gradle Wrapper se versão mínima for exigida (ex.: 7.0.2)." >> $GITHUB_STEP_SUMMARY
           fi
-          echo "exit_code=$EXIT_CODE" >> $GITHUB_ENV
+          exit 0
 
-      - name: Upload dependency report
+      # 5️⃣ Upload do log completo (opcional)
+      - name: Upload full dependency log
         uses: actions/upload-artifact@v4
         with:
-          name: Dependency-Report
-          path: dependency-report.txt
-
-      - name: Upload summary
-        uses: actions/upload-artifact@v4
-        with:
-          name: Dependency-Summary
-          path: summary.md
+          name: Full-Dependency-Log
+          path: full-log.txt

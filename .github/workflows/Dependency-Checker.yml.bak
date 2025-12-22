@@ -31,12 +31,13 @@ jobs:
           else
             echo "❌ Algumas dependências não foram resolvidas." >> summary.md
             echo "" >> summary.md
-            echo "### Sugestões para diagnóstico:" >> summary.md
-            echo "- Execute com \`--stacktrace\` para ver a pilha completa." >> summary.md
-            echo "- Execute com \`--info\` ou \`--debug\` para mais detalhes." >> summary.md
-            echo "- Execute com \`--scan\` para insights completos." >> summary.md
+            echo "### Detalhes adicionais coletados:" >> summary.md
+            echo "- Rodando novamente com --stacktrace, --info e --debug" >> summary.md
+            ./gradlew dependencies --stacktrace >> dependency-report.txt 2>&1
+            ./gradlew dependencies --info >> dependency-report.txt 2>&1
+            ./gradlew dependencies --debug >> dependency-report.txt 2>&1
             echo "" >> summary.md
-            echo "Veja detalhes em dependency-report.txt" >> summary.md
+            echo "Veja detalhes completos em dependency-report.txt" >> summary.md
           fi
           echo "exit_code=$EXIT_CODE" >> $GITHUB_ENV
 
