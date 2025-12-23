@@ -37,8 +37,8 @@ jobs:
       # 5️⃣ Rodar árvore de dependências
       - name: Generate dependency tree
         run: |
-    ./gradlew buildEnvironment > build-env.txt 2>&1
-    ./gradlew dependencyInsight --dependency commons-compress > dependency-insight.txt 2>&1 || true
+          ./gradlew dependencies > dependencies-tree.txt 2>&1
+          ./gradlew dependencyInsight --dependency commons-compress > dependency-insight.txt 2>&1
 
       # 6️⃣ Resumo no painel
       - name: Summarize dependency hunt
