@@ -9,7 +9,7 @@ buildscript {
     }
     
     dependencies {
-        classpath "org.apache.commons:commons-compress:1.21"
+        classpath "org.apache.commons:commons-compress:1.21"   // 👈 força no classpath
         classpath 'org.wisepersist:gwt-gradle-plugin:1.1.0'
         //classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
         classpath 'org.gretty:gretty:4.0.3'
@@ -50,12 +50,6 @@ allprojects {
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
     }
 
-    // 👇 Aqui sim é o lugar certo
-    configurations.all {
-        resolutionStrategy {
-            force "org.apache.commons:commons-compress:1.21"
-        }
-    }
 }
 
 // Tentativa antiga de forçar commons-compress (removida)

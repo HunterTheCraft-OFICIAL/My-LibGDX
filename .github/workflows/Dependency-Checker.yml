@@ -19,15 +19,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3️⃣ Permissão gradlew
+      # 3️⃣ Cache do Gradle (evita baixar dependências toda hora)
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4️⃣ Permissão gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4️⃣ Rodar Gradle com diagnósticos
+      # 5️⃣ Limpar cache de dependências (garante commons-compress atualizado)
+      - name: Refresh Gradle dependencies
+        run: ./gradlew --refresh-dependencies
+
+      # 6️⃣ Rodar Gradle com diagnósticos
       - name: Run Gradle with diagnostics
         run: |
           set +e
-          ./gradlew build --stacktrace --info --debug > full-log.txt 2>&1
+          ./gradlew buildEnvironment build --stacktrace --info --debug > full-log.txt 2>&1
           EXIT_CODE=$?
           echo "### Dependency Check Summary" >> $GITHUB_STEP_SUMMARY
           if [ $EXIT_CODE -eq 0 ]; then
@@ -36,16 +51,17 @@ jobs:
             echo "❌ Foram encontrados problemas durante a configuração." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Erros detectados:" >> $GITHUB_STEP_SUMMARY
-            grep -E "FAILURE|Could not find|Minimum supported Gradle version|Exception" full-log.txt | head -50 >> $GITHUB_STEP_SUMMARY
+            grep -E "FAILURE|Could not find|Minimum supported Gradle version|Exception|NoSuchMethodError" full-log.txt | head -50 >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Sugestões automáticas:" >> $GITHUB_STEP_SUMMARY
             echo "- Execute com \`--scan\` para insights completos." >> $GITHUB_STEP_SUMMARY
             echo "- Verifique dependências inexistentes (ex.: Gretty 3.0.2)." >> $GITHUB_STEP_SUMMARY
             echo "- Ajuste Gradle Wrapper se versão mínima for exigida (ex.: 7.0.2)." >> $GITHUB_STEP_SUMMARY
+            echo "- Confirme se \`commons-compress:1.21\` está no buildscript classpath." >> $GITHUB_STEP_SUMMARY
           fi
           exit 0
 
-      # 5️⃣ Upload do log completo (opcional)
+      # 7️⃣ Upload do log completo
       - name: Upload full dependency log
         uses: actions/upload-artifact@v4
         with:
