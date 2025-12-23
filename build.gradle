@@ -49,11 +49,11 @@ allprojects {
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
     }
     
-    configurations.all {
+    //configurations.all {
         resolutionStrategy {
             force "org.apache.commons:commons-compress:1.21"
         }
-    }
+   // }
 }
 
 // Tentativa antiga de forçar commons-compress (removida)
