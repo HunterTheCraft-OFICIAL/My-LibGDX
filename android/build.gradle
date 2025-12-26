@@ -1,0 +1,35 @@
+// ./android/build.gradle [Gradle v8.11.1]-[Módulo Android]
+
+plugins {
+    id "com.android.application"
+}
+
+android {
+    // ✅ obrigatório no AGP 8.x
+    namespace "com.mylibgdx.test"
+    
+    // versão atual do SDK
+    compileSdkVersion 34
+
+    defaultConfig {
+        applicationId "com.mylibgdx.test"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Opcional: para builds mais rápidos
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // Nenhuma dependência LibGDX ainda — só o mínimo para testar o AGP
+}
