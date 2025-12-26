@@ -1,0 +1,44 @@
+name: Minimal Dependency Probe
+# Sonda de Dependência Mínima
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ JDK compatível
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3️⃣ Permissão gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4️⃣ Rodar buildEnvironment
+      - name: Run buildEnvironment
+        run: |
+          ./gradlew buildEnvironment > build-env.txt 2>&1 || true
+
+      # 5️⃣ Mostrar resumo no painel
+      - name: Summarize results
+        run: |
+          echo "## 🔎 Buildscript Classpath Probe" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          grep "commons-compress" build-env.txt || echo "Nenhuma referência a commons-compress encontrada." >> $GITHUB_STEP_SUMMARY
+
+      # 6️⃣ Upload artefato
+      - name: Upload build-env artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Env-Result
+          path: build-env.txt
