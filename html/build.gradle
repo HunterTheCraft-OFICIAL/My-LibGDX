@@ -1,0 +1,19 @@
+// ./html/build.gradle [Gradle v8.11.1]-[Módulo HTML/GWT]
+
+plugins {
+    // Plugin padrão para aplicações web em Gradle
+    id "java"
+
+    // 🔎 Suspeito: GWT (Google Web Toolkit)
+    // Descomente para testar se ele força commons-compress:1.20
+    // id "de.richsource.gradle.plugins.gwt" version "0.6"
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // Nenhuma dependência LibGDX ainda — só o mínimo para testar o GWT
+}

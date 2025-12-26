@@ -18,7 +18,7 @@ buildscript {
         classpath "org.gretty:gretty:4.0.3"
 
         // GWT (Google Web Toolkit)
-        // classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:0.6"
+        classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:0.6"
 
         // RoboVM (plugin para iOS, descontinuado)
         // classpath "org.robovm:robovm-gradle-plugin:2.3.12"
