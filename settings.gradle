@@ -8,5 +8,5 @@ include(":android")
 // Outros módulos ficam desativados por enquanto
 // include(":core")
 // include(":desktop")
-// include(":ios")
-include(":html")
+include(":ios")
+// include(":html")

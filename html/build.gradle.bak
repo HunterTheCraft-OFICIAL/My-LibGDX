@@ -6,7 +6,7 @@ plugins {
 
     // 🔎 Suspeito: GWT (Google Web Toolkit)
     // Descomente para testar se ele força commons-compress:1.20
-     id "de.richsource.gradle.plugins.gwt" version "0.6"
+    // id "de.richsource.gradle.plugins.gwt" version "0.6"
 }
 
 repositories {
