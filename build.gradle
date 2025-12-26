@@ -1,2 +1,22 @@
 // ./build.gradle [Gradle v8.11.1]-[Raíz]
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // ✅ Android Gradle Plugin (AGP)
+        classpath "com.android.tools.build:gradle:8.10.1"
+
+        // Opcional: força commons-compress mais novo
+        classpath "org.apache.commons:commons-compress:1.21"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}

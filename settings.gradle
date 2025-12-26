@@ -2,10 +2,11 @@
 
 rootProject.name = "My-LibGDX"
 
-// Inclui todos os módulos do projeto (por enquanto desativado)
+// ✅ Comece só com o módulo Android para testar o AGP isolado
+include(":android")
 
-//include 'core'
-//include 'desktop'
-//include 'android'
-//include 'ios'
-//include 'html'
+// Outros módulos ficam desativados por enquanto
+// include(":core")
+// include(":desktop")
+// include(":ios")
+// include(":html")
