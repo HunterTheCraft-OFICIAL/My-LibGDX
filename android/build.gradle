@@ -53,9 +53,16 @@ android {
 
 // ✅ Task moderna para compatibilidade com configuration cache
 tasks.register("copyAndroidNatives") {
+    // declara entradas e saídas para o Gradle entender o cache incremental
+    inputs.files(configurations.natives)
+    outputs.dir("libs/arm64-v8a")
+    outputs.dir("libs/armeabi-v7a")
+    outputs.dir("libs/x86_64")
+    outputs.dir("libs/x86")
+
     doFirst {
-        file("libs/armeabi-v7a/").mkdirs()
         file("libs/arm64-v8a/").mkdirs()
+        file("libs/armeabi-v7a/").mkdirs()
         file("libs/x86_64/").mkdirs()
         file("libs/x86/").mkdirs()
     }
