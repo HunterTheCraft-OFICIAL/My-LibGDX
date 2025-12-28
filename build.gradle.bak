@@ -103,7 +103,7 @@ project(":android") {
     }
 }
 
-/*project(":core") {
+project(":core") {
     apply plugin: "java-library"
 
     dependencies {

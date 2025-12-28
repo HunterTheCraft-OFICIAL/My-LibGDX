@@ -24,7 +24,7 @@ buildscript {
         // ❌ ainda puxava commons-compress antigo
         //classpath 'com.android.tools.build:gradle:7.0.4' // ❌ causava erro de parsing de SDK
         //classpath 'com.android.tools.build:gradle:4.1.3' // ❌ muito antigo, incompatível com SDK atual
-        classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.12'
+        //classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.12'
     }
 }
 
