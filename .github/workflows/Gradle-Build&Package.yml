@@ -5,6 +5,7 @@ on:
     workflows: ["LibGDX Dependency Checker"]
     types:
       - completed
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
