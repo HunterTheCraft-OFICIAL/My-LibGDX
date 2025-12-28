@@ -5,7 +5,12 @@ rootProject.name = "My-LibGDX"
 // Inclui todos os módulos do projeto (por enquanto desativado)
 
 //include "core"
-//include "android"
 //include "desktop"
-//include 'ios'
+//include "android"
 //include "html"
+
+include 'core'
+include 'desktop'
+include 'android'
+include 'ios'
+// include 'html'

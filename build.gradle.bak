@@ -101,9 +101,9 @@ project(":android") {
         implementation "com.google.android.gms:play-services-ads:$adsVersion"
         implementation "com.badlogicgames.gdxpay:gdx-pay-android-googlebilling:$gdxPayVersion"
     }
-} //*/
+}
 
-project(":core") {
+/*project(":core") {
     apply plugin: "java-library"
 
     dependencies {
@@ -131,10 +131,9 @@ project(":desktop") {
         api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
         api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
     }
-} //*/
+}
 
-// Android 
-
+// Módulo Android Duplicado 
 /*project(":android") {
     apply plugin: "com.android.application"
 
@@ -165,7 +164,7 @@ project(":desktop") {
     }
 } //*/
 
-project(":ios") {
+/*project(":ios") {
     apply plugin: "java-library"
     apply plugin: "robovm"
 
