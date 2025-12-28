@@ -59,7 +59,7 @@ allprojects {
 
 // Tentativa antiga de forçar commons-compress (removida)
 
-/*project(":android") {
+project(":android") {
     apply plugin: "com.android.application"
 
     // ✅ Bloco obrigatório no AGP 8.x
@@ -103,7 +103,7 @@ allprojects {
     }
 } //*/
 
-/*project(":core") {
+project(":core") {
     apply plugin: "java-library"
 
     dependencies {
@@ -120,7 +120,7 @@ allprojects {
 }
 //*/
 
-/*project(":desktop") {
+project(":desktop") {
     apply plugin: "java-library"
 
     dependencies {
@@ -132,6 +132,8 @@ allprojects {
         api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
     }
 } //*/
+
+// Android 
 
 /*project(":android") {
     apply plugin: "com.android.application"
@@ -163,7 +165,7 @@ allprojects {
     }
 } //*/
 
-/*project(":ios") {
+project(":ios") {
     apply plugin: "java-library"
     apply plugin: "robovm"
 

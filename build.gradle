@@ -120,7 +120,7 @@ project(":core") {
 }
 //*/
 
-project(":desktop") {
+/* project(":desktop") {
     apply plugin: "java-library"
 
     dependencies {
@@ -133,7 +133,9 @@ project(":desktop") {
     }
 } //*/
 
-project(":android") {
+// Android 
+
+/*project(":android") {
     apply plugin: "com.android.application"
 
     configurations { natives }
@@ -163,7 +165,7 @@ project(":android") {
     }
 } //*/
 
-project(":ios") {
+/* project(":ios") {
     apply plugin: "java-library"
     apply plugin: "robovm"
 
