@@ -1,8 +1,10 @@
 name: LibGDX Multi-Platform Build
 
 on:
-  workflow_dispatch:
-
+  workflow_run:
+    workflows: ["LibGDX Dependency Checker"]
+    types:
+      - completed
 jobs:
   build:
     runs-on: ubuntu-latest
