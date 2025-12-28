@@ -59,7 +59,7 @@ allprojects {
 
 // Tentativa antiga de forçar commons-compress (removida)
 
-project(":android") {
+/*project(":android") {
     apply plugin: "com.android.application"
 
     // ✅ Bloco obrigatório no AGP 8.x
@@ -101,7 +101,7 @@ project(":android") {
         implementation "com.google.android.gms:play-services-ads:$adsVersion"
         implementation "com.badlogicgames.gdxpay:gdx-pay-android-googlebilling:$gdxPayVersion"
     }
-}
+} //*/
 
 /*project(":core") {
     apply plugin: "java-library"
@@ -120,7 +120,7 @@ project(":android") {
 }
 //*/
 
-project(":desktop") {
+/*project(":desktop") {
     apply plugin: "java-library"
 
     dependencies {
@@ -131,9 +131,9 @@ project(":desktop") {
         api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
         api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
     }
-}
+} //*/
 
-project(":android") {
+/*project(":android") {
     apply plugin: "com.android.application"
 
     configurations { natives }
@@ -161,9 +161,9 @@ project(":android") {
         implementation "com.google.android.gms:play-services-ads:$adsVersion"
         implementation "com.badlogicgames.gdxpay:gdx-pay-android-googlebilling:$gdxPayVersion"
     }
-}
+} //*/
 
-project(":ios") {
+/*project(":ios") {
     apply plugin: "java-library"
     apply plugin: "robovm"
 
@@ -177,5 +177,5 @@ project(":ios") {
         api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios"
         api "com.badlogicgames.gdx-controllers:gdx-controllers-ios:$gdxControllersVersion"
     }
-}
+} //*/
 
