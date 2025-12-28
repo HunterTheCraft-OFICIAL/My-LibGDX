@@ -66,6 +66,15 @@ tasks.register("copyAndroidNatives", Copy) {
     }
     include "*.so"
     into layout.projectDirectory.dir("libs")
+
+    // Estratégia de duplicados: renomear em vez de excluir
+    eachFile { details ->
+        def parentDir = details.file.parentFile.name
+        def originalName = details.name
+        // Se já existe um arquivo com o mesmo nome, renomeia com sufixo da pasta
+        details.name = "${parentDir}_${originalName}"
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.withType(com.android.build.gradle.tasks.PackageApplication).configureEach {

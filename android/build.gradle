@@ -52,29 +52,31 @@ android {
 }
 
 // ✅ Task moderna para compatibilidade com configuration cache
-tasks.register("copyAndroidNatives", Copy) {
+tasks.register("copyAndroidNatives") {
     doFirst {
-        file("libs/armeabi/").mkdirs()
         file("libs/armeabi-v7a/").mkdirs()
         file("libs/arm64-v8a/").mkdirs()
         file("libs/x86_64/").mkdirs()
         file("libs/x86/").mkdirs()
     }
 
-    from {
-        configurations.natives.copy().files.collect { zipTree(it) }
-    }
-    include "*.so"
-    into layout.projectDirectory.dir("libs")
+    configurations.natives.copy().files.each { jar ->
+        def outputDir = null
+        if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("libs/arm64-v8a")
+        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("libs/armeabi-v7a")
+        if (jar.name.endsWith("natives-x86_64.jar")) outputDir = file("libs/x86_64")
+        if (jar.name.endsWith("natives-x86.jar")) outputDir = file("libs/x86")
 
-    // Estratégia de duplicados: renomear em vez de excluir
-    eachFile { details ->
-        def parentDir = details.file.parentFile.name
-        def originalName = details.name
-        // Se já existe um arquivo com o mesmo nome, renomeia com sufixo da pasta
-        details.name = "${parentDir}_${originalName}"
+        if (outputDir != null) {
+            copy {
+                from zipTree(jar)
+                into outputDir
+                include "*.so"
+                // mantém nomes originais, evita conflito
+                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            }
+        }
     }
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.withType(com.android.build.gradle.tasks.PackageApplication).configureEach {
