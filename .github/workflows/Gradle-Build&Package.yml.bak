@@ -44,12 +44,12 @@ jobs:
       - name: Run copyAndroidNatives only
         run: ./gradlew :android:copyAndroidNatives --stacktrace
 
-      # 📦 Snapshot das libs já copiadas/renomeadas
-      - name: Upload JNI libs snapshot
+      # 📦 Snapshot completo do módulo Android (inclui libs, jniLibs, manifest, etc.)
+      - name: Upload Android module snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: JNI-Libs-Snapshot
-          path: android/libs/**
+          name: Android-Module-Snapshot
+          path: android/**
           retention-days: 7
 
       # 6️⃣ Build completo
@@ -63,26 +63,26 @@ jobs:
           name: MyGdx-Desktop
           path: desktop/build/libs/*.jar
 
-      # 8️⃣ Artefato Android
+      # 8️⃣ Artefato Android (APK compilado)
       - name: Upload android artifact
         uses: actions/upload-artifact@v4
         with:
           name: MyGdx-Android
           path: android/build/outputs/apk/debug/*.apk
 
-      # 9️⃣ Artefato HTML
-      - name: Upload html artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MyGdx-HTML
-          path: html/build/**
+      # 9️⃣ Artefato HTML (removido / comentado)
+      # - name: Upload html artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: MyGdx-HTML
+      #     path: html/build/**
 
-      # 🔟 Artefato iOS
-      - name: Upload ios artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MyGdx-iOS
-          path: ios/build/**
+      # 🔟 Artefato iOS (removido / comentado)
+      # - name: Upload ios artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: MyGdx-iOS
+      #     path: ios/build/**
 
       # 11️⃣ Compactar projeto pós-build
       - name: Create compact project zip

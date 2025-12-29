@@ -12,18 +12,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout
+      # 0️⃣1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ JDK compatível
+      # 0️⃣2️⃣ JDK compatível
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3️⃣ Cache Gradle
+      # 0️⃣3️⃣ Cache Gradle
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -32,11 +32,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 4️⃣ Permissão gradlew
+      # 0️⃣4️⃣ Permissão gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 5️⃣ Diagnóstico de dependências
+      # 0️⃣5️⃣ Diagnóstico de dependências
       - name: Check Gradle dependencies
         run: ./gradlew dependencies --stacktrace
 
@@ -44,49 +44,53 @@ jobs:
       - name: Run copyAndroidNatives only
         run: ./gradlew :android:copyAndroidNatives --stacktrace
 
+      # ➕ Etapa extra: copiar backend Android jar para libs/
+      - name: Copy backend jar into libs
+        run: ./gradlew :android:copyBackendJar
+
       # 📦 Snapshot completo do módulo Android (inclui libs, jniLibs, manifest, etc.)
       - name: Upload Android module snapshot
         uses: actions/upload-artifact@v4
         with:
           name: Android-Module-Snapshot
-          path: android/**
+          path: android/
           retention-days: 7
 
-      # 6️⃣ Build completo
+      # 0️⃣6️⃣ Build completo
       - name: Build all modules
         run: ./gradlew build --stacktrace
 
-      # 7️⃣ Artefato Desktop
+      # 0️⃣7️⃣ Artefato Desktop
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v4
         with:
           name: MyGdx-Desktop
           path: desktop/build/libs/*.jar
 
-      # 8️⃣ Artefato Android (APK compilado)
+      # 0️⃣8️⃣ Artefato Android (APK compilado)
       - name: Upload android artifact
         uses: actions/upload-artifact@v4
         with:
           name: MyGdx-Android
           path: android/build/outputs/apk/debug/*.apk
 
-      # 9️⃣ Artefato HTML (removido / comentado)
+      # 0️⃣9️⃣ Artefato HTML (removido / comentado)
       # - name: Upload html artifact
       #   uses: actions/upload-artifact@v4
       #   with:
       #     name: MyGdx-HTML
-      #     path: html/build/**
+      #     path: html/build/
 
       # 🔟 Artefato iOS (removido / comentado)
       # - name: Upload ios artifact
       #   uses: actions/upload-artifact@v4
       #   with:
       #     name: MyGdx-iOS
-      #     path: ios/build/**
+      #     path: ios/build/
 
-      # 11️⃣ Compactar projeto pós-build
+      # 1️⃣1️⃣ Compactar projeto pós-build
       - name: Create compact project zip
-        run: zip -r MyGdx-Project.zip . -x "*.git*"
+        run: zip -r MyGdx-Project.zip . -x ".git*"
 
       - name: Upload compact project artifact
         uses: actions/upload-artifact@v4
