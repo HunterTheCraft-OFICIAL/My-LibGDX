@@ -1,7 +1,8 @@
 name: LibGDX Dependency Test Workflow
 
 on:
-  workflow_dispatch:   # só roda manualmente
+  push:                # roda automaticamente em cada push
+  workflow_dispatch:   # pode ser disparado manualmente
 
 jobs:
   test-build:
