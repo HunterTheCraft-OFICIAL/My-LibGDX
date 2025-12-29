@@ -83,7 +83,7 @@ tasks.register("copyAndroidNatives") {
 // ✅ Task para copiar backend Android jar para libs/
 tasks.register("copyBackendJar") {
     doLast {
-        def backend = configurations.compileClasspath.resolvedConfiguration.resolvedArtifacts.find {
+        def backend = configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.find {
             it.moduleVersion.id.group == "com.badlogicgames.gdx" && it.name == "gdx-backend-android"
         }?.file
         if (backend) {
@@ -91,6 +91,9 @@ tasks.register("copyBackendJar") {
                 from backend
                 into "libs"
             }
+            println "✅ Copiado gdx-backend-android.jar para android/libs/"
+        } else {
+            println "⚠️ gdx-backend-android.jar não encontrado em runtimeClasspath"
         }
     }
 }
