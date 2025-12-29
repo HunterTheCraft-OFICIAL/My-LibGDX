@@ -16,8 +16,7 @@ android {
             renderscript.srcDirs = ['src']
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
-            // ✅ agora os nativos ficam em src/main/jniLibs
-            jniLibs.srcDirs = ['src/main/jniLibs']
+            jniLibs.srcDirs = ['libs']
         }
     }
 
@@ -56,24 +55,24 @@ android {
 tasks.register("copyAndroidNatives") {
     // declara entradas e saídas para o Gradle entender o cache incremental
     inputs.files(configurations.natives)
-    outputs.dir("src/main/jniLibs/arm64-v8a")
-    outputs.dir("src/main/jniLibs/armeabi-v7a")
-    outputs.dir("src/main/jniLibs/x86_64")
-    outputs.dir("src/main/jniLibs/x86")
+    outputs.dir("libs/arm64-v8a")
+    outputs.dir("libs/armeabi-v7a")
+    outputs.dir("libs/x86_64")
+    outputs.dir("libs/x86")
 
     doFirst {
-        file("src/main/jniLibs/arm64-v8a/").mkdirs()
-        file("src/main/jniLibs/armeabi-v7a/").mkdirs()
-        file("src/main/jniLibs/x86_64/").mkdirs()
-        file("src/main/jniLibs/x86/").mkdirs()
+        file("libs/arm64-v8a/").mkdirs()
+        file("libs/armeabi-v7a/").mkdirs()
+        file("libs/x86_64/").mkdirs()
+        file("libs/x86/").mkdirs()
     }
 
     configurations.natives.copy().files.each { jar ->
         def outputDir = null
-        if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("src/main/jniLibs/arm64-v8a")
-        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("src/main/jniLibs/armeabi-v7a")
-        if (jar.name.endsWith("natives-x86_64.jar")) outputDir = file("src/main/jniLibs/x86_64")
-        if (jar.name.endsWith("natives-x86.jar")) outputDir = file("src/main/jniLibs/x86")
+        if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("libs/arm64-v8a")
+        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("libs/armeabi-v7a")
+        if (jar.name.endsWith("natives-x86_64.jar")) outputDir = file("libs/x86_64")
+        if (jar.name.endsWith("natives-x86.jar")) outputDir = file("libs/x86")
 
         if (outputDir != null) {
             copy {
@@ -91,7 +90,22 @@ tasks.withType(com.android.build.gradle.tasks.PackageApplication).configureEach 
     dependsOn(tasks.named("copyAndroidNatives"))
 }
 
-// ⚠️ Task run removida do CI, pois não faz sentido em ambiente sem dispositivo
-// Se quiser manter localmente, pode recriar com tasks.register("run", Exec) {...}
+task run(type: Exec) {
+    def path
+    def localProperties = project.file("../local.properties")
+    if (localProperties.exists()) {
+        Properties properties = new Properties()
+        localProperties.withInputStream { instr ->
+            properties.load(instr)
+        }
+        def sdkDir = properties.getProperty('sdk.dir')
+        path = sdkDir ?: "$System.env.ANDROID_HOME"
+    } else {
+        path = "$System.env.ANDROID_HOME"
+    }
+
+    def adb = path + "/platform-tools/adb"
+    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.mygdx.game/com.mygdx.game.AndroidLauncher'
+}
 
 eclipse.project.name = appName + "-android"
