@@ -10,14 +10,15 @@ android {
 
     sourceSets {
         main {
+            // ✅ Mantemos a organização original
             manifest.srcFile 'AndroidManifest.xml'
             java.srcDirs = ['src']
             aidl.srcDirs = ['src']
             renderscript.srcDirs = ['src']
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
-            // ✅ agora os nativos ficam em src/main/jniLibs
-            jniLibs.srcDirs = ['src/main/jniLibs']
+            // ✅ Agora os nativos ficam em src/jniLibs
+            jniLibs.srcDirs = ['src/jniLibs']
         }
     }
 
@@ -56,24 +57,24 @@ android {
 tasks.register("copyAndroidNatives") {
     // declara entradas e saídas para o Gradle entender o cache incremental
     inputs.files(configurations.natives)
-    outputs.dir("src/main/jniLibs/arm64-v8a")
-    outputs.dir("src/main/jniLibs/armeabi-v7a")
-    outputs.dir("src/main/jniLibs/x86_64")
-    outputs.dir("src/main/jniLibs/x86")
+    outputs.dir("src/jniLibs/arm64-v8a")
+    outputs.dir("src/jniLibs/armeabi-v7a")
+    outputs.dir("src/jniLibs/x86_64")
+    outputs.dir("src/jniLibs/x86")
 
     doFirst {
-        file("src/main/jniLibs/arm64-v8a/").mkdirs()
-        file("src/main/jniLibs/armeabi-v7a/").mkdirs()
-        file("src/main/jniLibs/x86_64/").mkdirs()
-        file("src/main/jniLibs/x86/").mkdirs()
+        file("src/jniLibs/arm64-v8a/").mkdirs()
+        file("src/jniLibs/armeabi-v7a/").mkdirs()
+        file("src/jniLibs/x86_64/").mkdirs()
+        file("src/jniLibs/x86/").mkdirs()
     }
 
     configurations.natives.copy().files.each { jar ->
         def outputDir = null
-        if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("src/main/jniLibs/arm64-v8a")
-        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("src/main/jniLibs/armeabi-v7a")
-        if (jar.name.endsWith("natives-x86_64.jar")) outputDir = file("src/main/jniLibs/x86_64")
-        if (jar.name.endsWith("natives-x86.jar")) outputDir = file("src/main/jniLibs/x86")
+        if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("src/jniLibs/arm64-v8a")
+        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("src/jniLibs/armeabi-v7a")
+        if (jar.name.endsWith("natives-x86_64.jar")) outputDir = file("src/jniLibs/x86_64")
+        if (jar.name.endsWith("natives-x86.jar")) outputDir = file("src/jniLibs/x86")
 
         if (outputDir != null) {
             copy {

@@ -19,6 +19,8 @@ android {
             assets.srcDirs = ['assets']
             // ✅ Agora os nativos ficam em src/jniLibs
             jniLibs.srcDirs = ['src/jniLibs']
+            // ✅ JARs locais ficam em libs/
+            jniLibs.srcDirs += ['libs']
         }
     }
 
@@ -51,6 +53,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+// ✅ Dependências locais (inclui backend Android)
+dependencies {
+    implementation files('libs/gdx-backend-android.jar')
 }
 
 // ✅ Task moderna para compatibilidade com configuration cache
@@ -88,7 +95,11 @@ tasks.register("copyAndroidNatives") {
     }
 }
 
+// ✅ Garantir ordem correta das tasks
 tasks.withType(com.android.build.gradle.tasks.PackageApplication).configureEach {
+    dependsOn(tasks.named("copyAndroidNatives"))
+}
+tasks.withType(JavaCompile).configureEach {
     dependsOn(tasks.named("copyAndroidNatives"))
 }
 
