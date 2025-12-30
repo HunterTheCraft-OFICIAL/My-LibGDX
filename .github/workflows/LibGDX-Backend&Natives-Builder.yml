@@ -1,0 +1,91 @@
+name: LibGDX Backend & Natives Builder
+# LibGDX-Backend&Natives-Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      libgdx_version:
+        description: 'Versão do LibGDX para build'
+        default: '1.14.0'
+
+jobs:
+  build-libgdx:
+    runs-on: ubuntu-latest
+    env:
+      LIBGDX_VERSION: ${{ github.event.inputs.libgdx_version }}
+      PRONTO_DIR: libgdx-pronto
+
+    steps:
+      # 1️⃣ Checkout do seu projeto (opcional, se precisar)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3️⃣ Cache do Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4️⃣ Clonar LibGDX
+      - name: Clone LibGDX
+        run: |
+          git clone --depth 1 --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-temp
+          cd libgdx-temp
+          ./gradlew clean
+
+      # 5️⃣ Criar diretório organizado para backends e nativos
+      - name: Criar diretórios libgdx-pronto
+        run: |
+          mkdir -p $PRONTO_DIR/desktop
+          mkdir -p $PRONTO_DIR/android
+          mkdir -p $PRONTO_DIR/core
+
+      # 6️⃣ Compilar todos os módulos e copiar JARs/nativos
+      - name: Build & copy artifacts
+        run: |
+          cd libgdx-temp
+          echo "### Compilando core..."
+          ./gradlew :gdx:jar :gdx-box2d:jar :gdx-freetype:jar
+          cp gdx/build/libs/gdx-$LIBGDX_VERSION.jar ../$PRONTO_DIR/core/
+          cp gdx-box2d/build/libs/gdx-box2d-$LIBGDX_VERSION.jar ../$PRONTO_DIR/core/
+          cp gdx-freetype/build/libs/gdx-freetype-$LIBGDX_VERSION.jar ../$PRONTO_DIR/core/
+
+          echo "### Compilando desktop backend..."
+          ./gradlew :backends:desktop:jar :backends:desktop:natives
+          cp backends/desktop/build/libs/gdx-backend-lwjgl-$LIBGDX_VERSION.jar ../$PRONTO_DIR/desktop/
+          cp -r backends/desktop/build/libs/natives/* ../$PRONTO_DIR/desktop/
+
+          echo "### Compilando android backend..."
+          ./gradlew :backends:android:jar :backends:android:natives
+          cp backends/android/build/libs/gdx-backend-android-$LIBGDX_VERSION.jar ../$PRONTO_DIR/android/
+          cp -r backends/android/build/libs/natives/* ../$PRONTO_DIR/android/
+
+      # 7️⃣ Sumário de diagnóstico
+      - name: Build summary
+        run: |
+          echo "## 🔧 LibGDX Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for module in core desktop android; do
+            echo "### $module artifacts:" >> $GITHUB_STEP_SUMMARY
+            ls -1 $PRONTO_DIR/$module >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+
+      # 8️⃣ Upload do artefato final
+      - name: Upload libgdx-pronto
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgdx-pronto
+          path: $PRONTO_DIR
