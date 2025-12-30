@@ -1,57 +1,124 @@
-name: LibGDX Backend & Natives Builder (Refined)
+name: LibGDX Backend & Natives Builder (Final)
 
 on:
   workflow_dispatch:
 
 env:
-  LIBGDX_VERSION: 1.14.0
+  LIBGDX_VERSION: "1.14.0"
+  JAVA_VERSION: "17"
 
 jobs:
   build-libgdx:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: ☕ Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Clone libGDX
+      - name: 📦 Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-libgdx-${{ env.LIBGDX_VERSION }}
+
+      - name: 📥 Clone libGDX (official)
         run: |
-          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
+          git clone --depth 1 --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
 
-      - name: Build libGDX
+      - name: 🧹 Clean libGDX
+        working-directory: libgdx-src
+        run: ./gradlew clean
+
+      - name: 🏗️ Build core + backends
         working-directory: libgdx-src
         run: |
           ./gradlew \
-            :gdx:build \
-            :backends:gdx-backend-android:assembleRelease \
-            :backends:gdx-backend-lwjgl3:build
+            gdx:build \
+            backends:gdx-backend-lwjgl3:build \
+            backends:gdx-backend-android:build
 
-      - name: Prepare artifact structure
+      - name: 🧱 Prepare fake SDK structure
         run: |
-          mkdir -p libgdx-pronto/{core,desktop,android,natives/{windows,linux,macos}}
+          mkdir -p libgdx-pronto/{core,desktop/android,android/libs,android/jniLibs}
+          mkdir -p libgdx-pronto/desktop/natives/{windows,linux,macos}
+          mkdir -p libgdx-pronto/android/jniLibs/{armeabi-v7a,arm64-v8a,x86,x86_64}
 
-          # Core
+      # ---------- CORE ----------
+      - name: 📦 Collect CORE jars
+        run: |
           cp libgdx-src/gdx/build/libs/*.jar libgdx-pronto/core/
 
-          # Desktop (LWJGL3)
+      # ---------- DESKTOP ----------
+      - name: 🖥️ Collect DESKTOP backend
+        run: |
           cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar libgdx-pronto/desktop/
 
-          # Android
-          cp libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar libgdx-pronto/android/
+      # ---------- ANDROID BACKEND ----------
+      - name: 🤖 Collect ANDROID backend
+        run: |
+          cp libgdx-src/backends/gdx-backend-android/build/libs/*.jar libgdx-pronto/android/libs/
 
-          # Natives
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*windows*.jar libgdx-pronto/natives/windows/ || true
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*linux*.jar libgdx-pronto/natives/linux/ || true
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*macos*.jar libgdx-pronto/natives/macos/ || true
+      # ---------- ANDROID NATIVES ----------
+      - name: 📱 Extract ANDROID natives (.so)
+        run: |
+          for jar in libgdx-src/backends/gdx-backend-android/build/libs/*.jar; do
+            unzip -o "$jar" "lib/**/*.so" -d tmp-natives || true
+          done
 
-      - name: Upload artifact
+          find tmp-natives -name "*.so" | while read so; do
+            if [[ "$so" == *"armeabi-v7a"* ]]; then
+              cp "$so" libgdx-pronto/android/jniLibs/armeabi-v7a/
+            elif [[ "$so" == *"arm64-v8a"* ]]; then
+              cp "$so" libgdx-pronto/android/jniLibs/arm64-v8a/
+            elif [[ "$so" == *"x86_64"* ]]; then
+              cp "$so" libgdx-pronto/android/jniLibs/x86_64/
+            elif [[ "$so" == *"x86"* ]]; then
+              cp "$so" libgdx-pronto/android/jniLibs/x86/
+            fi
+          done
+
+      # ---------- README ----------
+      - name: 📝 Generate README
+        run: |
+          cat <<EOF > libgdx-pronto/README.txt
+          LibGDX Offline SDK - $LIBGDX_VERSION
+
+          Conteúdo:
+          - core/: gdx.jar + sources
+          - desktop/: backend LWJGL3
+          - desktop/natives/: (estrutura pronta)
+          - android/libs/: backend android
+          - android/jniLibs/: nativos por ABI
+
+          Todos os arquivos foram compilados a partir do repositório oficial:
+          https://github.com/libgdx/libgdx
+
+          Nenhum binário foi obtido via Maven Central.
+          EOF
+
+      # ---------- SUMMARY ----------
+      - name: 📊 Build Summary
+        run: |
+          echo "## 🧩 LibGDX Offline SDK Build" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: $LIBGDX_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- Core JARs: $(ls libgdx-pronto/core | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop JARs: $(ls libgdx-pronto/desktop | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Android JARs: $(ls libgdx-pronto/android/libs | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Android natives:" >> $GITHUB_STEP_SUMMARY
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            echo "  - $abi: $(ls libgdx-pronto/android/jniLibs/$abi 2>/dev/null | wc -l) .so" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: 📤 Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: libgdx-pronto-${{ env.LIBGDX_VERSION }}
-          path: libgdx-pronto
+          path: libgdx-pronto/
