@@ -1,0 +1,89 @@
+name: LibGDX Backend & Natives Builder (Clean)
+# LibGDX-Backend-&-Natives-Builder (Clean)
+
+on:
+  workflow_dispatch:
+
+env:
+  LIBGDX_VERSION: 1.14.0
+  JAVA_VERSION: 17
+
+jobs:
+  build-libgdx:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout (empty repo ok)
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: 📦 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-libgdx-${{ env.LIBGDX_VERSION }}
+
+      - name: 🧬 Clone libGDX source
+        run: |
+          git clone --depth 1 --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
+
+      - name: 🔧 Build libGDX (core + backends + natives)
+        working-directory: libgdx-src
+        run: |
+          chmod +x gradlew
+          ./gradlew clean \
+            :gdx:build \
+            :backends:gdx-backend-android:assembleRelease \
+            :backends:gdx-backend-lwjgl:build \
+            :backends:gdx-backend-lwjgl3:build
+
+      - name: 📁 Create organized output structure
+        run: |
+          mkdir -p libgdx-pronto/{core,android,desktop,natives}
+
+      - name: 📤 Collect JARs / AARs / Natives
+        run: |
+          # Core
+          find libgdx-src/gdx/build -name "*.jar" -exec cp {} libgdx-pronto/core/ \;
+
+          # Android backend
+          find libgdx-src/backends/gdx-backend-android/build -name "*.aar" -exec cp {} libgdx-pronto/android/ \;
+
+          # Desktop backends
+          find libgdx-src/backends -path "*lwjgl*" -name "*.jar" -exec cp {} libgdx-pronto/desktop/ \;
+
+          # Natives (Android + Desktop)
+          find libgdx-src -name "*natives*.jar" -exec cp {} libgdx-pronto/natives/ \;
+
+      - name: 📊 Diagnostic Summary
+        run: |
+          echo "## 🧩 LibGDX Build Summary ($LIBGDX_VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 📦 Core" >> $GITHUB_STEP_SUMMARY
+          ls libgdx-pronto/core | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY || echo "- ❌ none" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🤖 Android" >> $GITHUB_STEP_SUMMARY
+          ls libgdx-pronto/android | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY || echo "- ❌ none" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🖥 Desktop" >> $GITHUB_STEP_SUMMARY
+          ls libgdx-pronto/desktop | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY || echo "- ❌ none" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧬 Natives" >> $GITHUB_STEP_SUMMARY
+          ls libgdx-pronto/natives | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY || echo "- ❌ none" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📦 Upload libGDX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgdx-pronto-${{ env.LIBGDX_VERSION }}
+          path: libgdx-pronto
