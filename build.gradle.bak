@@ -62,43 +62,64 @@ allprojects {
 project(":android") {
     apply plugin: "com.android.application"
 
-    // ✅ Bloco obrigatório no AGP 8.x
+    // ✅ Configuração obrigatória no Android Gradle Plugin 8.x
     android {
-        compileSdkVersion 34   // ou a versão que você estiver usando
+        compileSdkVersion 35   // ajuste para a versão que você está usando
+
         defaultConfig {
             applicationId "com.hunterthecraft.stresstest"  // ajuste para o seu package real
-            minSdkVersion 21
-            targetSdkVersion 34
+            minSdkVersion 26
+            targetSdkVersion 35
             versionCode 1
             versionName "1.0"
         }
 
-        namespace "com.hunterthecraft.stresstest"  // ✅ novo campo exigido pelo AGP
+        namespace "com.hunterthecraft.stresstest"  // ✅ campo exigido pelo AGP
     }
 
+    // ✅ Configuração para nativos
     configurations { natives }
 
     dependencies {
+        // Core compartilhado
         implementation project(":core")
+
+        // Backend Android
         api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+
+        // Nativos LibGDX
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+
+        // Box2D
         api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a"
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
+
+        // FreeType
         api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
         natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"
         natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a"
         natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
         natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
+
+        // Ashley ECS
         api "com.badlogicgames.ashley:ashley:$ashleyVersion"
+
+        // AI
         api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+
+        // Controllers
         api "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion"
+
+        // Google Ads
         implementation "com.google.android.gms:play-services-ads:$adsVersion"
+
+        // GDX Pay
         implementation "com.badlogicgames.gdxpay:gdx-pay-android-googlebilling:$gdxPayVersion"
     }
 }
