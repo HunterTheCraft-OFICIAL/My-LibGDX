@@ -1,4 +1,4 @@
-name: LibGDX Backends & Natives Builder
+name: LibGDX Backends & Natives Builder (Option A)
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -20,91 +20,92 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Clone libGDX
+      - name: Clone libGDX official source
         run: |
           git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
 
-      - name: Build core and backends
+      - name: Build libGDX core and backends
         working-directory: libgdx-src
         run: |
           ./gradlew \
             :gdx:build \
-            :backends:gdx-backend-lwjgl3:build \
-            :backends:gdx-backend-android:assembleRelease
+            :backends:gdx-backend-android:assembleRelease \
+            :backends:gdx-backend-lwjgl3:build
 
-      - name: Prepare directory structure
+      - name: Prepare artifact structure
         run: |
-          mkdir -p libgdx-pronto/{core,desktop/{backend,natives/{windows,linux,macos}},android/{backend,jniLibs}}
+          set -e
 
-      # ======================
-      # CORE
-      # ======================
-      - name: Copy core jars
-        run: |
-          cp libgdx-src/gdx/build/libs/*.jar libgdx-pronto/core/
+          ROOT=libgdx-backends-natives-${LIBGDX_VERSION}
 
-      # ======================
-      # DESKTOP
-      # ======================
-      - name: Copy desktop backend
-        run: |
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar \
-             libgdx-pronto/desktop/backend/
+          mkdir -p $ROOT/{core,android/{backend,natives},desktop/{backend,natives/{windows,linux,macos}}}
 
-      - name: Resolve and extract desktop natives (LWJGL)
-        run: |
-          cd libgdx-src
-          ./gradlew :backends:gdx-backend-lwjgl3:dependencies --configuration runtimeClasspath
+          # ---------------- CORE ----------------
+          cp libgdx-src/gdx/build/libs/gdx-*-javadoc.jar $ROOT/core/
+          cp libgdx-src/gdx/build/libs/gdx-*-sources.jar $ROOT/core/
+          cp libgdx-src/gdx/build/libs/gdx-*.jar $ROOT/core/
 
-          find ~/.gradle/caches -name "*lwjgl*natives-windows*.jar" -exec unzip -o {} -d natives-win \;
-          find ~/.gradle/caches -name "*lwjgl*natives-linux*.jar" -exec unzip -o {} -d natives-linux \;
-          find ~/.gradle/caches -name "*lwjgl*natives-macos*.jar" -exec unzip -o {} -d natives-macos \;
-
-          cp natives-win/*.dll libgdx-pronto/desktop/natives/windows/ || true
-          cp natives-linux/*.so libgdx-pronto/desktop/natives/linux/ || true
-          cp natives-macos/*.dylib libgdx-pronto/desktop/natives/macos/ || true
-
-      # ======================
-      # ANDROID
-      # ======================
-      - name: Copy android backend
-        run: |
-          cp libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar \
-             libgdx-pronto/android/backend/
-
-      - name: Extract android natives
-        run: |
-          mkdir android-aar
-          unzip libgdx-pronto/android/backend/*.aar -d android-aar
-
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            mkdir -p libgdx-pronto/android/jniLibs/$abi
-            cp android-aar/jni/$abi/*.so libgdx-pronto/android/jniLibs/$abi/ || true
+          for f in $ROOT/core/*SNAPSHOT*.jar; do
+            mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
           done
 
-      # ======================
-      # README
-      # ======================
-      - name: Create README
-        run: |
-          cat <<EOF > libgdx-pronto/README.txt
-          LibGDX Backends & Natives - ${LIBGDX_VERSION}
+          # ---------------- ANDROID BACKEND ----------------
+          AAR=$(ls libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar | head -n 1)
+          cp "$AAR" /tmp/android-backend.aar
 
-          Conteúdo:
-          - core: libGDX core
-          - desktop/backend: LWJGL3 backend
-          - desktop/natives: natives por SO
-          - android/backend: AAR oficial
-          - android/jniLibs: natives por ABI
+          unzip -q /tmp/android-backend.aar -d /tmp/android-aar
 
-          Gerado automaticamente a partir do código-fonte oficial do libGDX.
-          EOF
+          # backend.jar (classes.jar)
+          cp /tmp/android-aar/classes.jar $ROOT/android/backend/gdx-backend-android.jar
 
-      # ======================
-      # ARTIFACT
-      # ======================
+          # natives (.so)
+          if [ -d /tmp/android-aar/jni ]; then
+            cp -r /tmp/android-aar/jni/* $ROOT/android/natives/
+          fi
+
+          # ---------------- DESKTOP BACKEND ----------------
+          cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/gdx-backend-lwjgl3-*.jar \
+             $ROOT/desktop/backend/
+
+          for f in $ROOT/desktop/backend/*SNAPSHOT*.jar; do
+            mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
+          done
+
+          # ---------------- DESKTOP NATIVES ----------------
+          cp libgdx-src/gdx-platform/build/natives/*windows*.dll \
+             $ROOT/desktop/natives/windows/ || true
+
+          cp libgdx-src/gdx-platform/build/natives/*linux*.so \
+             $ROOT/desktop/natives/linux/ || true
+
+          cp libgdx-src/gdx-platform/build/natives/*macos*.dylib \
+             $ROOT/desktop/natives/macos/ || true
+
+          # ---------------- README ----------------
+          cat << 'EOF' > $ROOT/README.txt
+LibGDX Backends & Natives - Manual Package
+
+✔ Official libGDX source compiled from GitHub
+✔ No third-party modifications
+✔ Prepared for manual usage (no Gradle required)
+
+Structure:
+- core/: libGDX core jars
+- android/backend/: Android backend (.jar)
+- android/natives/: Android native libraries (.so)
+- desktop/backend/: LWJGL3 backend
+- desktop/natives/: Desktop natives per OS
+
+This package is intended for:
+- Manual project integration
+- Existing projects update
+- Educational and experimental usage
+
+Generated automatically via GitHub Actions.
+EOF
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: libgdx-backends-natives-${{ env.LIBGDX_VERSION }}
-          path: libgdx-pronto
+          path: libgdx-backends-natives-${{ env.LIBGDX_VERSION }}
