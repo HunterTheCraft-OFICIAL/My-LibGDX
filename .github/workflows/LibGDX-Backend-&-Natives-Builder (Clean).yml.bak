@@ -3,33 +3,42 @@ name: LibGDX – Build completo e artefato filtrável
 on:
   workflow_dispatch:
     inputs:
-      preset:
-        description: "Preset de pacote"
+      platform_preset:
+        description: "Pré-configuração de Plataforma"
         type: choice
-        options: [core, desktop, android, full]
-        default: full
+        options: [basico, completo, personalizado]
+        default: completo
 
-      android:
-        type: boolean
-        default: true
+      extension_preset:
+        description: "Pré-configuração de Extensões"
+        type: choice
+        options: [nenhum, basico, completo, personalizado]
+        default: completo
 
       desktop:
         type: boolean
         default: true
 
-      ios:
+      android:
         type: boolean
-        default: false
+        default: true
 
       html:
         type: boolean
         default: false
 
-      extensions:
+      ios:
         type: boolean
-        default: true
+        default: false
+
+      libgdx_version:
+        description: "Versão do libGDX (informativo por enquanto)"
+        type: choice
+        options: [1.12.0, 1.13.0, 1.14.0]
+        default: 1.14.0
 
 env:
+  # Fonte da verdade (por enquanto sempre a mais recente)
   LIBGDX_VERSION: 1.14.0
 
 jobs:
@@ -37,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout apenas do workflow repo
+      # 1️⃣ Checkout do workflow repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -48,7 +57,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3️⃣ Clone explícito do libGDX (fonte da verdade)
+      # 3️⃣ Clone explícito do libGDX
       - name: Clone official libGDX
         run: |
           git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
@@ -57,7 +66,7 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x libgdx-src/gradlew
 
-      # 5️⃣ Build COMPLETO (sempre igual)
+      # 5️⃣ Build COMPLETO (imutável)
       - name: Build all LibGDX modules
         working-directory: libgdx-src
         run: ./gradlew build
@@ -66,7 +75,6 @@ jobs:
       - name: Prepare artifact structure
         run: |
           ROOT=artifact/libgdx
-
           mkdir -p $ROOT/{backends,extensions,natives,tools}
 
           # Core
@@ -81,35 +89,55 @@ jobs:
           # Tools
           cp -r libgdx-src/extensions/gdx-tools/build/libs $ROOT/tools || true
 
-          # Platform natives (se existirem)
+          # Natives
           cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
 
-      # 7️⃣ FILTRO DO ARTEFATO (botões atuam AQUI)
+      # 7️⃣ FILTRO DO ARTEFATO — NOVA INTERFACE
       - name: Filter artifact content
         run: |
           ROOT=artifact/libgdx
 
-          if [ "${{ github.event.inputs.android }}" != "true" ]; then
-            rm -rf $ROOT/backends/android
-            rm -rf $ROOT/natives/android
+          echo "Platform preset: ${{ github.event.inputs.platform_preset }}"
+          echo "Extension preset: ${{ github.event.inputs.extension_preset }}"
+
+          ####################################
+          # PLATAFORMAS
+          ####################################
+
+          if [ "${{ github.event.inputs.platform_preset }}" != "personalizado" ]; then
+            if [ "${{ github.event.inputs.platform_preset }}" = "basico" ]; then
+              rm -rf $ROOT/backends/{android,html,ios,ios-metalangle}
+              rm -rf $ROOT/natives/{android,ios}
+            fi
+
+            if [ "${{ github.event.inputs.platform_preset }}" = "completo" ]; then
+              echo "Plataforma completa — nada removido"
+            fi
+          else
+            [ "${{ github.event.inputs.desktop }}" != "true" ] && rm -rf $ROOT/backends/desktop $ROOT/natives/desktop
+            [ "${{ github.event.inputs.android }}" != "true" ] && rm -rf $ROOT/backends/android $ROOT/natives/android
+            [ "${{ github.event.inputs.html }}" != "true" ] && rm -rf $ROOT/backends/html
+            [ "${{ github.event.inputs.ios }}" != "true" ] && rm -rf $ROOT/backends/{ios,ios-metalangle} $ROOT/natives/ios
           fi
 
-          if [ "${{ github.event.inputs.desktop }}" != "true" ]; then
-            rm -rf $ROOT/backends/desktop
-            rm -rf $ROOT/natives/desktop
-          fi
+          ####################################
+          # EXTENSÕES
+          ####################################
 
-          if [ "${{ github.event.inputs.ios }}" != "true" ]; then
-            rm -rf $ROOT/backends/ios
-            rm -rf $ROOT/backends/ios-metalangle
-          fi
-
-          if [ "${{ github.event.inputs.html }}" != "true" ]; then
-            rm -rf $ROOT/backends/html
-          fi
-
-          if [ "${{ github.event.inputs.extensions }}" != "true" ]; then
+          if [ "${{ github.event.inputs.extension_preset }}" = "nenhum" ]; then
             rm -rf $ROOT/extensions
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "basico" ]; then
+            echo "Extensões básicas — filtro futuro"
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "completo" ]; then
+            echo "Extensões completas — nada removido"
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "personalizado" ]; then
+            echo "Modo personalizado — controle fino futuro"
           fi
 
       # 8️⃣ Upload do artefato final
