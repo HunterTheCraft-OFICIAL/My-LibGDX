@@ -1,4 +1,4 @@
-name: LibGDX Complete Backends & Extensions Builder (Option A)
+name: LibGDX Backends & Extensions Builder – Full (Option A)
 
 on:
   workflow_dispatch:
@@ -24,17 +24,23 @@ jobs:
         run: |
           git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
 
-      - name: Build libGDX core and backends
+      - name: Build libGDX core, backends and extensions
         working-directory: libgdx-src
         run: |
           ./gradlew \
             :gdx:build \
             :backends:gdx-backend-android:assembleRelease \
-            :backends:gdx-backend-lwjgl3:build \
             :backends:gdx-backend-lwjgl:build \
+            :backends:gdx-backend-lwjgl3:build \
             :backends:gdx-backend-headless:build \
+            :backends:gdx-backend-gwt:build \
             :backends:gdx-backend-robovm:build \
-            :backends:gdx-backend-robovm-metalangle:build
+            :backends:gdx-backend-robovm-metalangle:build \
+            :extensions:gdx-box2d:build \
+            :extensions:gdx-bullet:build \
+            :extensions:gdx-freetype:build \
+            :extensions:gdx-tools:build \
+            :extensions:gdx-lwjgl3-angle:build
 
       - name: Prepare artifact structure
         run: |
@@ -43,50 +49,47 @@ jobs:
 
           # Core
           mkdir -p $ROOT/core
-          cp libgdx-src/gdx/build/libs/gdx-*.jar $ROOT/core/
-          cp libgdx-src/gdx/build/libs/gdx-*-sources.jar $ROOT/core/
-          cp libgdx-src/gdx/build/libs/gdx-*-javadoc.jar $ROOT/core/
-          for f in $ROOT/core/*SNAPSHOT*.jar; do
-            mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
-          done
+          cp libgdx-src/gdx/build/libs/*.jar $ROOT/core/
 
-          # Backends
+          # Android backend
           mkdir -p $ROOT/backends/android
-          mkdir -p $ROOT/backends/desktop/{lwjgl,lwjgl3,headless}
-          mkdir -p $ROOT/backends/ios
-          mkdir -p $ROOT/backends/ios-metalangle
-
-          # Android
-          AAR=$(ls libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar | head -n1)
+          mkdir -p $ROOT/natives/android
+          AAR=$(ls libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar | head -n 1)
           cp "$AAR" $ROOT/backends/android/gdx-backend-android-${LIBGDX_VERSION}.aar
-          cp libgdx-src/backends/gdx-backend-android/build/libs/gdx-backend-android-*.jar \
-             $ROOT/backends/android/gdx-backend-android-${LIBGDX_VERSION}.jar
+          unzip -q "$AAR" -d /tmp/android-aar
+          cp /tmp/android-aar/classes.jar $ROOT/backends/android/gdx-backend-android-${LIBGDX_VERSION}.jar
+          if [ -d /tmp/android-aar/jni ]; then cp -r /tmp/android-aar/jni/* $ROOT/natives/android/; fi
 
-          # Desktop
-          for backend in lwjgl lwjgl3 headless; do
-            mkdir -p $ROOT/backends/desktop/$backend
-            cp libgdx-src/backends/gdx-backend-$backend/build/libs/gdx-backend-$backend-*.jar \
-               $ROOT/backends/desktop/$backend/
-            for f in $ROOT/backends/desktop/$backend/*SNAPSHOT*.jar; do
-              mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
-            done
-          done
+          # Desktop backends
+          mkdir -p $ROOT/backends/desktop/{lwjgl,lwjgl3,headless}
+          cp libgdx-src/backends/gdx-backend-lwjgl/build/libs/*.jar $ROOT/backends/desktop/lwjgl/
+          cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar $ROOT/backends/desktop/lwjgl3/
+          cp libgdx-src/backends/gdx-backend-headless/build/libs/*.jar $ROOT/backends/desktop/headless/
 
-          # iOS
-          for ios_backend in robovm robovm-metalangle; do
-            mkdir -p $ROOT/backends/$ios_backend
-            cp libgdx-src/backends/gdx-backend-$ios_backend/build/libs/gdx-backend-$ios_backend-*.jar \
-               $ROOT/backends/$ios_backend/
-          done
+          # Por conta disso que eu disse que você uniu os 2 por conta que o Desktop e o Android ficaram separados já esses veja
+          # HTML & iOS backends
+          mkdir -p $ROOT/backends/{html,ios,ios-metalangle}
+          cp libgdx-src/backends/gdx-backend-gwt/build/libs/*.jar $ROOT/backends/html/ || true
+          cp libgdx-src/backends/gdx-backend-robovm/build/libs/*.jar $ROOT/backends/ios/ || true
+          cp libgdx-src/backends/gdx-backend-robovm-metalangle/build/libs/*.jar $ROOT/backends/ios-metalangle/ || true
 
           # Extensions
-          mkdir -p $ROOT/extensions
-          for ext in box2d bullet freetype lwjgl3-angle tools; do
-            mkdir -p $ROOT/extensions/$ext
-            cp libgdx-src/extensions/$ext/build/libs/*.jar $ROOT/extensions/$ext/
-            for f in $ROOT/extensions/$ext/*SNAPSHOT*.jar; do
-              mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
-            done
+          mkdir -p $ROOT/extensions/{box2d,bullet,freetype,tools,lwjgl3-angle}
+          cp libgdx-src/extensions/gdx-box2d/build/libs/*.jar $ROOT/extensions/box2d/
+          cp libgdx-src/extensions/gdx-bullet/build/libs/*.jar $ROOT/extensions/bullet/
+          cp libgdx-src/extensions/gdx-freetype/build/libs/*.jar $ROOT/extensions/freetype/
+          cp libgdx-src/extensions/gdx-tools/build/libs/*.jar $ROOT/extensions/tools/
+          cp libgdx-src/extensions/gdx-lwjgl3-angle/build/libs/*.jar $ROOT/extensions/lwjgl3-angle/
+
+          # Desktop natives
+          mkdir -p $ROOT/natives/desktop/{windows,linux,macos}
+          cp libgdx-src/gdx-platform/build/natives/*windows*.dll $ROOT/natives/desktop/windows/ || true
+          cp libgdx-src/gdx-platform/build/natives/*linux*.so $ROOT/natives/desktop/linux/ || true
+          cp libgdx-src/gdx-platform/build/natives/*macos*.dylib $ROOT/natives/desktop/macos/ || true
+
+          # Remove SNAPSHOT from ALL jars (global)
+          find $ROOT -type f -name "*SNAPSHOT*.jar" | while read f; do
+            mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
           done
 
       - name: Upload artifact

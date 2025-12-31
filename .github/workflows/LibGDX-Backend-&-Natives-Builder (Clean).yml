@@ -1,98 +1,118 @@
-name: LibGDX Backends & Extensions Builder – Full (Option A)
+name: LibGDX – Build completo e artefato filtrável
 
 on:
   workflow_dispatch:
+    inputs:
+      preset:
+        description: "Preset de pacote"
+        type: choice
+        options: [core, desktop, android, full]
+        default: full
 
-env:
-  LIBGDX_VERSION: 1.14.0
+      android:
+        type: boolean
+        default: true
+
+      desktop:
+        type: boolean
+        default: true
+
+      ios:
+        type: boolean
+        default: false
+
+      html:
+        type: boolean
+        default: false
+
+      extensions:
+        type: boolean
+        default: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout do repositório
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Setup Java
+      # 2️⃣ Setup do Java
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Clone official libGDX source
-        run: |
-          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
+      # 3️⃣ Permissão para Gradle
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./libgdx-src/gradlew
 
-      - name: Build libGDX core, backends and extensions
+      # 4️⃣ Build COMPLETO (sempre igual, sem condições)
+      - name: Build all LibGDX modules
         working-directory: libgdx-src
-        run: |
-          ./gradlew \
-            :gdx:build \
-            :backends:gdx-backend-android:assembleRelease \
-            :backends:gdx-backend-lwjgl:build \
-            :backends:gdx-backend-lwjgl3:build \
-            :backends:gdx-backend-headless:build \
-            :backends:gdx-backend-gwt:build \
-            :backends:gdx-backend-robovm:build \
-            :backends:gdx-backend-robovm-metalangle:build \
-            :extensions:gdx-box2d:build \
-            :extensions:gdx-bullet:build \
-            :extensions:gdx-freetype:build \
-            :extensions:gdx-tools:build \
-            :extensions:gdx-lwjgl3-angle:build
+        run: ./gradlew build
 
+      # 5️⃣ Preparação da estrutura do artefato
       - name: Prepare artifact structure
         run: |
-          set -e
-          ROOT=libgdx-complete-${LIBGDX_VERSION}
+          ROOT=artifact/libgdx
+
+          mkdir -p $ROOT
+          mkdir -p $ROOT/backends
+          mkdir -p $ROOT/extensions
+          mkdir -p $ROOT/natives
+          mkdir -p $ROOT/tools
 
           # Core
-          mkdir -p $ROOT/core
-          cp libgdx-src/gdx/build/libs/*.jar $ROOT/core/
+          cp libgdx-src/gdx/build/libs/*.jar $ROOT || true
 
-          # Android backend
-          mkdir -p $ROOT/backends/android
-          mkdir -p $ROOT/natives/android
-          AAR=$(ls libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar | head -n 1)
-          cp "$AAR" $ROOT/backends/android/gdx-backend-android-${LIBGDX_VERSION}.aar
-          unzip -q "$AAR" -d /tmp/android-aar
-          cp /tmp/android-aar/classes.jar $ROOT/backends/android/gdx-backend-android-${LIBGDX_VERSION}.jar
-          if [ -d /tmp/android-aar/jni ]; then cp -r /tmp/android-aar/jni/* $ROOT/natives/android/; fi
-
-          # Desktop backends
-          mkdir -p $ROOT/backends/desktop/{lwjgl,lwjgl3,headless}
-          cp libgdx-src/backends/gdx-backend-lwjgl/build/libs/*.jar $ROOT/backends/desktop/lwjgl/
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar $ROOT/backends/desktop/lwjgl3/
-          cp libgdx-src/backends/gdx-backend-headless/build/libs/*.jar $ROOT/backends/desktop/headless/
-
-          # HTML & iOS backends
-          mkdir -p $ROOT/backends/{html,ios,ios-metalangle}
-          cp libgdx-src/backends/gdx-backend-gwt/build/libs/*.jar $ROOT/backends/html/ || true
-          cp libgdx-src/backends/gdx-backend-robovm/build/libs/*.jar $ROOT/backends/ios/ || true
-          cp libgdx-src/backends/gdx-backend-robovm-metalangle/build/libs/*.jar $ROOT/backends/ios-metalangle/ || true
+          # Backends
+          cp -r libgdx-src/backends $ROOT/ || true
 
           # Extensions
-          mkdir -p $ROOT/extensions/{box2d,bullet,freetype,tools,lwjgl3-angle}
-          cp libgdx-src/extensions/gdx-box2d/build/libs/*.jar $ROOT/extensions/box2d/
-          cp libgdx-src/extensions/gdx-bullet/build/libs/*.jar $ROOT/extensions/bullet/
-          cp libgdx-src/extensions/gdx-freetype/build/libs/*.jar $ROOT/extensions/freetype/
-          cp libgdx-src/extensions/gdx-tools/build/libs/*.jar $ROOT/extensions/tools/
-          cp libgdx-src/extensions/gdx-lwjgl3-angle/build/libs/*.jar $ROOT/extensions/lwjgl3-angle/
+          cp -r libgdx-src/extensions $ROOT/ || true
 
-          # Desktop natives
-          mkdir -p $ROOT/natives/desktop/{windows,linux,macos}
-          cp libgdx-src/gdx-platform/build/natives/*windows*.dll $ROOT/natives/desktop/windows/ || true
-          cp libgdx-src/gdx-platform/build/natives/*linux*.so $ROOT/natives/desktop/linux/ || true
-          cp libgdx-src/gdx-platform/build/natives/*macos*.dylib $ROOT/natives/desktop/macos/ || true
+          # Tools
+          cp -r libgdx-src/extensions/gdx-tools/build/libs $ROOT/tools || true
 
-          # Remove SNAPSHOT from ALL jars (global)
-          find $ROOT -type f -name "*SNAPSHOT*.jar" | while read f; do
-            mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
-          done
+          # Platform natives (se existirem)
+          cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
 
-      - name: Upload artifact
+      # 6️⃣ FILTRO DO ARTEFATO (botões atuam AQUI)
+      - name: Filter artifact content
+        run: |
+          ROOT=artifact/libgdx
+
+          if [ "${{ github.event.inputs.android }}" != "true" ]; then
+            rm -rf $ROOT/backends/android
+            rm -rf $ROOT/natives/android
+          fi
+
+          if [ "${{ github.event.inputs.desktop }}" != "true" ]; then
+            rm -rf $ROOT/backends/desktop
+            rm -rf $ROOT/natives/desktop
+          fi
+
+          if [ "${{ github.event.inputs.ios }}" != "true" ]; then
+            rm -rf $ROOT/backends/ios
+            rm -rf $ROOT/backends/ios-metalangle
+          fi
+
+          if [ "${{ github.event.inputs.html }}" != "true" ]; then
+            rm -rf $ROOT/backends/html
+          fi
+
+          if [ "${{ github.event.inputs.extensions }}" != "true" ]; then
+            rm -rf $ROOT/extensions
+          fi
+
+      # 7️⃣ Upload do artefato final
+      - name: Upload LibGDX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-complete-${{ env.LIBGDX_VERSION }}
-          path: libgdx-complete-${{ env.LIBGDX_VERSION }}
+          name: libgdx-complete-1.14.0
+          path: artifact
