@@ -42,9 +42,11 @@ jobs:
           mkdir -p $ROOT/android/backend
           mkdir -p $ROOT/android/natives
           mkdir -p $ROOT/desktop/backend
-          mkdir -p $ROOT/desktop/natives/{windows,linux,macos}
+          mkdir -p $ROOT/desktop/natives/windows
+          mkdir -p $ROOT/desktop/natives/linux
+          mkdir -p $ROOT/desktop/natives/macos
 
-          # -------- CORE --------
+          # ---------- CORE ----------
           cp libgdx-src/gdx/build/libs/gdx-*-javadoc.jar $ROOT/core/
           cp libgdx-src/gdx/build/libs/gdx-*-sources.jar $ROOT/core/
           cp libgdx-src/gdx/build/libs/gdx-*.jar $ROOT/core/
@@ -53,18 +55,22 @@ jobs:
             mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
           done
 
-          # -------- ANDROID BACKEND + NATIVES --------
+          # ---------- ANDROID BACKEND + NATIVES ----------
           AAR=$(ls libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar | head -n 1)
+
           cp "$AAR" /tmp/android-backend.aar
           unzip -q /tmp/android-backend.aar -d /tmp/android-aar
 
-          cp /tmp/android-aar/classes.jar $ROOT/android/backend/gdx-backend-android.jar
+          # Backend (.jar)
+          cp /tmp/android-aar/classes.jar \
+             $ROOT/android/backend/gdx-backend-android-${LIBGDX_VERSION}.jar
 
+          # Android natives (.so) — if present
           if [ -d /tmp/android-aar/jni ]; then
             cp -r /tmp/android-aar/jni/* $ROOT/android/natives/
           fi
 
-          # -------- DESKTOP BACKEND --------
+          # ---------- DESKTOP BACKEND ----------
           cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/gdx-backend-lwjgl3-*.jar \
              $ROOT/desktop/backend/
 
@@ -72,7 +78,7 @@ jobs:
             mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
           done
 
-          # -------- DESKTOP NATIVES --------
+          # ---------- DESKTOP NATIVES ----------
           cp libgdx-src/gdx-platform/build/natives/*windows*.dll \
              $ROOT/desktop/natives/windows/ || true
 
@@ -82,25 +88,25 @@ jobs:
           cp libgdx-src/gdx-platform/build/natives/*macos*.dylib \
              $ROOT/desktop/natives/macos/ || true
 
-          # -------- README --------
+          # ---------- README ----------
           cat > $ROOT/README.txt << 'EOF'
 LibGDX Backends & Natives – Manual Package
 
-✔ Official libGDX source
+✔ Official libGDX source (compiled from GitHub)
 ✔ No third-party modifications
 ✔ Prepared for manual usage (no Gradle required)
 
 Structure:
-- core/                 → libGDX core
+- core/                 → libGDX core jars
 - android/backend/      → Android backend (.jar)
 - android/natives/      → Android native libraries (.so)
 - desktop/backend/      → LWJGL3 backend
 - desktop/natives/      → Desktop natives per OS
 
-This package is intended for:
-- Manual integration
-- Existing project updates
-- Educational and experimental usage
+Notes:
+- Android natives may be embedded depending on libGDX version.
+- This package is intended for manual integration or updating
+  existing projects (not project generation).
 
 Generated via GitHub Actions.
 EOF
