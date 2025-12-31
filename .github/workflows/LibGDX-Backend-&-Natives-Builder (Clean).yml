@@ -1,4 +1,4 @@
-name: LibGDX Backends & Natives Builder (Option A)
+name: LibGDX Backends Builder (Option A – With Android AAR)
 
 on:
   workflow_dispatch:
@@ -36,37 +36,30 @@ jobs:
         run: |
           set -e
 
-          ROOT=libgdx-backends-natives-${LIBGDX_VERSION}
+          ROOT=libgdx-backends-${LIBGDX_VERSION}
 
           mkdir -p $ROOT/core
           mkdir -p $ROOT/android/backend
-          mkdir -p $ROOT/android/natives
+          mkdir -p $ROOT/android/aar
           mkdir -p $ROOT/desktop/backend
-          mkdir -p $ROOT/desktop/natives/windows
-          mkdir -p $ROOT/desktop/natives/linux
-          mkdir -p $ROOT/desktop/natives/macos
 
           # ---------- CORE ----------
-          cp libgdx-src/gdx/build/libs/gdx-*-javadoc.jar $ROOT/core/
-          cp libgdx-src/gdx/build/libs/gdx-*-sources.jar $ROOT/core/
           cp libgdx-src/gdx/build/libs/gdx-*.jar $ROOT/core/
+          cp libgdx-src/gdx/build/libs/gdx-*-sources.jar $ROOT/core/
+          cp libgdx-src/gdx/build/libs/gdx-*-javadoc.jar $ROOT/core/
 
           for f in $ROOT/core/*SNAPSHOT*.jar; do
             mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
           done
 
-          # ---------- ANDROID BACKEND + NATIVES ----------
+          # ---------- ANDROID BACKEND ----------
           AAR=$(ls libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar | head -n 1)
 
-          cp "$AAR" /tmp/android-backend.aar
-          unzip -q /tmp/android-backend.aar -d /tmp/android-aar
+          cp "$AAR" $ROOT/android/aar/gdx-backend-android-${LIBGDX_VERSION}.aar
 
+          unzip -q "$AAR" -d /tmp/android-aar
           cp /tmp/android-aar/classes.jar \
              $ROOT/android/backend/gdx-backend-android-${LIBGDX_VERSION}.jar
-
-          if [ -d /tmp/android-aar/jni ]; then
-            cp -r /tmp/android-aar/jni/* $ROOT/android/natives/
-          fi
 
           # ---------- DESKTOP BACKEND ----------
           cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/gdx-backend-lwjgl3-*.jar \
@@ -76,18 +69,8 @@ jobs:
             mv "$f" "${f/SNAPSHOT/${LIBGDX_VERSION}}"
           done
 
-          # ---------- DESKTOP NATIVES ----------
-          cp libgdx-src/gdx-platform/build/natives/*windows*.dll \
-             $ROOT/desktop/natives/windows/ || true
-
-          cp libgdx-src/gdx-platform/build/natives/*linux*.so \
-             $ROOT/desktop/natives/linux/ || true
-
-          cp libgdx-src/gdx-platform/build/natives/*macos*.dylib \
-             $ROOT/desktop/natives/macos/ || true
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-backends-natives-${{ env.LIBGDX_VERSION }}
-          path: libgdx-backends-natives-${{ env.LIBGDX_VERSION }}
+          name: libgdx-backends-${{ env.LIBGDX_VERSION }}
+          path: libgdx-backends-${{ env.LIBGDX_VERSION }}

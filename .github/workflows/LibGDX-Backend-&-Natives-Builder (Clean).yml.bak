@@ -61,11 +61,9 @@ jobs:
           cp "$AAR" /tmp/android-backend.aar
           unzip -q /tmp/android-backend.aar -d /tmp/android-aar
 
-          # Backend (.jar)
           cp /tmp/android-aar/classes.jar \
              $ROOT/android/backend/gdx-backend-android-${LIBGDX_VERSION}.jar
 
-          # Android natives (.so) — if present
           if [ -d /tmp/android-aar/jni ]; then
             cp -r /tmp/android-aar/jni/* $ROOT/android/natives/
           fi
@@ -87,29 +85,6 @@ jobs:
 
           cp libgdx-src/gdx-platform/build/natives/*macos*.dylib \
              $ROOT/desktop/natives/macos/ || true
-
-          # ---------- README ----------
-          cat > $ROOT/README.txt << 'EOF'
-LibGDX Backends & Natives – Manual Package
-
-✔ Official libGDX source (compiled from GitHub)
-✔ No third-party modifications
-✔ Prepared for manual usage (no Gradle required)
-
-Structure:
-- core/                 → libGDX core jars
-- android/backend/      → Android backend (.jar)
-- android/natives/      → Android native libraries (.so)
-- desktop/backend/      → LWJGL3 backend
-- desktop/natives/      → Desktop natives per OS
-
-Notes:
-- Android natives may be embedded depending on libGDX version.
-- This package is intended for manual integration or updating
-  existing projects (not project generation).
-
-Generated via GitHub Actions.
-EOF
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
