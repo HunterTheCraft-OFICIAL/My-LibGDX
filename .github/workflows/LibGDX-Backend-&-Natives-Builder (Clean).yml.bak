@@ -29,16 +29,17 @@ on:
         type: boolean
         default: true
 
+env:
+  LIBGDX_VERSION: 1.14.0
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout do repositório
+      # 1️⃣ Checkout apenas do workflow repo
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       # 2️⃣ Setup do Java
       - name: Set up JDK
@@ -47,28 +48,29 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3️⃣ Permissão para Gradle
-      - name: Grant execute permission for Gradle
-        run: chmod +x ./libgdx-src/gradlew
+      # 3️⃣ Clone explícito do libGDX (fonte da verdade)
+      - name: Clone official libGDX
+        run: |
+          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
 
-      # 4️⃣ Build COMPLETO (sempre igual, sem condições)
+      # 4️⃣ Permissão para Gradle
+      - name: Grant execute permission for Gradle
+        run: chmod +x libgdx-src/gradlew
+
+      # 5️⃣ Build COMPLETO (sempre igual)
       - name: Build all LibGDX modules
         working-directory: libgdx-src
         run: ./gradlew build
 
-      # 5️⃣ Preparação da estrutura do artefato
+      # 6️⃣ Preparação da estrutura do artefato
       - name: Prepare artifact structure
         run: |
           ROOT=artifact/libgdx
 
-          mkdir -p $ROOT
-          mkdir -p $ROOT/backends
-          mkdir -p $ROOT/extensions
-          mkdir -p $ROOT/natives
-          mkdir -p $ROOT/tools
+          mkdir -p $ROOT/{backends,extensions,natives,tools}
 
           # Core
-          cp libgdx-src/gdx/build/libs/*.jar $ROOT || true
+          cp libgdx-src/gdx/build/libs/*.jar $ROOT/ || true
 
           # Backends
           cp -r libgdx-src/backends $ROOT/ || true
@@ -82,7 +84,7 @@ jobs:
           # Platform natives (se existirem)
           cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
 
-      # 6️⃣ FILTRO DO ARTEFATO (botões atuam AQUI)
+      # 7️⃣ FILTRO DO ARTEFATO (botões atuam AQUI)
       - name: Filter artifact content
         run: |
           ROOT=artifact/libgdx
@@ -110,9 +112,9 @@ jobs:
             rm -rf $ROOT/extensions
           fi
 
-      # 7️⃣ Upload do artefato final
+      # 8️⃣ Upload do artefato final
       - name: Upload LibGDX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-complete-1.14.0
+          name: libgdx-${{ env.LIBGDX_VERSION }}
           path: artifact
