@@ -1,62 +1,7 @@
-name: LibGDX Backend & Natives Builder (Selectable)
+name: LibGDX Backends & Natives Builder
 
 on:
   workflow_dispatch:
-    inputs:
-      preset:
-        description: "Preset rápido"
-        required: true
-        default: "basic"
-        type: choice
-        options:
-          - basic
-          - custom
-          - full
-
-      platform_android:
-        description: "Android"
-        type: boolean
-        default: true
-
-      platform_desktop:
-        description: "Desktop (LWJGL3)"
-        type: boolean
-        default: true
-
-      platform_html:
-        description: "HTML (GWT)"
-        type: boolean
-        default: false
-
-      platform_ios:
-        description: "iOS (RoboVM)"
-        type: boolean
-        default: false
-
-      ext_box2d:
-        description: "gdx-box2d"
-        type: boolean
-        default: false
-
-      ext_bullet:
-        description: "gdx-bullet"
-        type: boolean
-        default: false
-
-      ext_freetype:
-        description: "gdx-freetype"
-        type: boolean
-        default: false
-
-      ext_tools:
-        description: "gdx-tools"
-        type: boolean
-        default: false
-
-      ext_angle:
-        description: "gdx-lwjgl3-angle"
-        type: boolean
-        default: false
 
 env:
   LIBGDX_VERSION: 1.14.0
@@ -79,111 +24,87 @@ jobs:
         run: |
           git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
 
-      - name: Resolve selections
-        id: select
-        run: |
-          PRESET="${{ github.event.inputs.preset }}"
-
-          if [ "$PRESET" = "basic" ]; then
-            ANDROID=true
-            DESKTOP=true
-            HTML=false
-            IOS=false
-            BOX2D=false
-            BULLET=false
-            FREETYPE=false
-            TOOLS=false
-            ANGLE=false
-          elif [ "$PRESET" = "full" ]; then
-            ANDROID=true
-            DESKTOP=true
-            HTML=true
-            IOS=true
-            BOX2D=true
-            BULLET=true
-            FREETYPE=true
-            TOOLS=true
-            ANGLE=true
-          else
-            ANDROID=${{ github.event.inputs.platform_android }}
-            DESKTOP=${{ github.event.inputs.platform_desktop }}
-            HTML=${{ github.event.inputs.platform_html }}
-            IOS=${{ github.event.inputs.platform_ios }}
-            BOX2D=${{ github.event.inputs.ext_box2d }}
-            BULLET=${{ github.event.inputs.ext_bullet }}
-            FREETYPE=${{ github.event.inputs.ext_freetype }}
-            TOOLS=${{ github.event.inputs.ext_tools }}
-            ANGLE=${{ github.event.inputs.ext_angle }}
-          fi
-
-          echo "ANDROID=$ANDROID" >> $GITHUB_ENV
-          echo "DESKTOP=$DESKTOP" >> $GITHUB_ENV
-          echo "HTML=$HTML" >> $GITHUB_ENV
-          echo "IOS=$IOS" >> $GITHUB_ENV
-          echo "BOX2D=$BOX2D" >> $GITHUB_ENV
-          echo "BULLET=$BULLET" >> $GITHUB_ENV
-          echo "FREETYPE=$FREETYPE" >> $GITHUB_ENV
-          echo "TOOLS=$TOOLS" >> $GITHUB_ENV
-          echo "ANGLE=$ANGLE" >> $GITHUB_ENV
-
-      - name: Build selected modules
+      - name: Build core and backends
         working-directory: libgdx-src
         run: |
-          ./gradlew :gdx:build
+          ./gradlew \
+            :gdx:build \
+            :backends:gdx-backend-lwjgl3:build \
+            :backends:gdx-backend-android:assembleRelease
 
-          if [ "$ANDROID" = "true" ]; then
-            ./gradlew :backends:gdx-backend-android:assembleRelease
-          fi
-
-          if [ "$DESKTOP" = "true" ]; then
-            ./gradlew :backends:gdx-backend-lwjgl3:build
-          fi
-
-          if [ "$HTML" = "true" ]; then
-            ./gradlew :backends:gdx-backend-gwt:build
-          fi
-
-          if [ "$IOS" = "true" ]; then
-            ./gradlew :backends:gdx-backend-robovm:build
-          fi
-
-          if [ "$BOX2D" = "true" ]; then
-            ./gradlew :extensions:gdx-box2d:gdx-box2d:build
-          fi
-
-          if [ "$BULLET" = "true" ]; then
-            ./gradlew :extensions:gdx-bullet:build
-          fi
-
-          if [ "$FREETYPE" = "true" ]; then
-            ./gradlew :extensions:gdx-freetype:build
-          fi
-
-          if [ "$TOOLS" = "true" ]; then
-            ./gradlew :extensions:gdx-tools:build
-          fi
-
-          if [ "$ANGLE" = "true" ]; then
-            ./gradlew :extensions:gdx-lwjgl3-angle:build
-          fi
-
-      - name: Prepare artifact
+      - name: Prepare directory structure
         run: |
-          mkdir -p libgdx-artifact/{core,android,desktop,html,ios,extensions,natives/{windows,linux,macos}}
+          mkdir -p libgdx-pronto/{core,desktop/{backend,natives/{windows,linux,macos}},android/{backend,jniLibs}}
 
-          cp libgdx-src/gdx/build/libs/*.jar libgdx-artifact/core/
+      # ======================
+      # CORE
+      # ======================
+      - name: Copy core jars
+        run: |
+          cp libgdx-src/gdx/build/libs/*.jar libgdx-pronto/core/
 
-          [ "$ANDROID" = "true" ] && cp libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar libgdx-artifact/android/ || true
-          [ "$DESKTOP" = "true" ] && cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar libgdx-artifact/desktop/ || true
+      # ======================
+      # DESKTOP
+      # ======================
+      - name: Copy desktop backend
+        run: |
+          cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar \
+             libgdx-pronto/desktop/backend/
 
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*windows*.jar libgdx-artifact/natives/windows/ || true
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*linux*.jar libgdx-artifact/natives/linux/ || true
-          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*macos*.jar libgdx-artifact/natives/macos/ || true
+      - name: Resolve and extract desktop natives (LWJGL)
+        run: |
+          cd libgdx-src
+          ./gradlew :backends:gdx-backend-lwjgl3:dependencies --configuration runtimeClasspath
 
-          cp libgdx-src/extensions/**/build/libs/*.jar libgdx-artifact/extensions/ || true
+          find ~/.gradle/caches -name "*lwjgl*natives-windows*.jar" -exec unzip -o {} -d natives-win \;
+          find ~/.gradle/caches -name "*lwjgl*natives-linux*.jar" -exec unzip -o {} -d natives-linux \;
+          find ~/.gradle/caches -name "*lwjgl*natives-macos*.jar" -exec unzip -o {} -d natives-macos \;
 
+          cp natives-win/*.dll libgdx-pronto/desktop/natives/windows/ || true
+          cp natives-linux/*.so libgdx-pronto/desktop/natives/linux/ || true
+          cp natives-macos/*.dylib libgdx-pronto/desktop/natives/macos/ || true
+
+      # ======================
+      # ANDROID
+      # ======================
+      - name: Copy android backend
+        run: |
+          cp libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar \
+             libgdx-pronto/android/backend/
+
+      - name: Extract android natives
+        run: |
+          mkdir android-aar
+          unzip libgdx-pronto/android/backend/*.aar -d android-aar
+
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            mkdir -p libgdx-pronto/android/jniLibs/$abi
+            cp android-aar/jni/$abi/*.so libgdx-pronto/android/jniLibs/$abi/ || true
+          done
+
+      # ======================
+      # README
+      # ======================
+      - name: Create README
+        run: |
+          cat <<EOF > libgdx-pronto/README.txt
+          LibGDX Backends & Natives - ${LIBGDX_VERSION}
+
+          Conteúdo:
+          - core: libGDX core
+          - desktop/backend: LWJGL3 backend
+          - desktop/natives: natives por SO
+          - android/backend: AAR oficial
+          - android/jniLibs: natives por ABI
+
+          Gerado automaticamente a partir do código-fonte oficial do libGDX.
+          EOF
+
+      # ======================
+      # ARTIFACT
+      # ======================
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: libgdx-backends-natives-${{ env.LIBGDX_VERSION }}
-          path: libgdx-artifact
+          path: libgdx-pronto

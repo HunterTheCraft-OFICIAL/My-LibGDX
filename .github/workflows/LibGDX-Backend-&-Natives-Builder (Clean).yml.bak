@@ -1,19 +1,72 @@
-name: LibGDX Backend & Natives Builder (Final)
+name: LibGDX Backend & Natives Builder (Selectable)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "main" ]
+    inputs:
+      preset:
+        description: "Preset rápido"
+        required: true
+        default: "basic"
+        type: choice
+        options:
+          - basic
+          - custom
+          - full
+
+      platform_android:
+        description: "Android"
+        type: boolean
+        default: true
+
+      platform_desktop:
+        description: "Desktop (LWJGL3)"
+        type: boolean
+        default: true
+
+      platform_html:
+        description: "HTML (GWT)"
+        type: boolean
+        default: false
+
+      platform_ios:
+        description: "iOS (RoboVM)"
+        type: boolean
+        default: false
+
+      ext_box2d:
+        description: "gdx-box2d"
+        type: boolean
+        default: false
+
+      ext_bullet:
+        description: "gdx-bullet"
+        type: boolean
+        default: false
+
+      ext_freetype:
+        description: "gdx-freetype"
+        type: boolean
+        default: false
+
+      ext_tools:
+        description: "gdx-tools"
+        type: boolean
+        default: false
+
+      ext_angle:
+        description: "gdx-lwjgl3-angle"
+        type: boolean
+        default: false
+
+env:
+  LIBGDX_VERSION: 1.14.0
 
 jobs:
-  build-libgdx:
+  build:
     runs-on: ubuntu-latest
 
-    env:
-      LIBGDX_VERSION: 1.14.0
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -22,108 +75,115 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Restore Gradle cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-libgdx-${{ env.LIBGDX_VERSION }}
-          restore-keys: |
-            gradle-libgdx-
-
-      - name: Clone libGDX official source
+      - name: Clone libGDX
         run: |
-          git clone --depth 1 --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
+          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
 
-      - name: Build libGDX (core + backends + natives)
+      - name: Resolve selections
+        id: select
+        run: |
+          PRESET="${{ github.event.inputs.preset }}"
+
+          if [ "$PRESET" = "basic" ]; then
+            ANDROID=true
+            DESKTOP=true
+            HTML=false
+            IOS=false
+            BOX2D=false
+            BULLET=false
+            FREETYPE=false
+            TOOLS=false
+            ANGLE=false
+          elif [ "$PRESET" = "full" ]; then
+            ANDROID=true
+            DESKTOP=true
+            HTML=true
+            IOS=true
+            BOX2D=true
+            BULLET=true
+            FREETYPE=true
+            TOOLS=true
+            ANGLE=true
+          else
+            ANDROID=${{ github.event.inputs.platform_android }}
+            DESKTOP=${{ github.event.inputs.platform_desktop }}
+            HTML=${{ github.event.inputs.platform_html }}
+            IOS=${{ github.event.inputs.platform_ios }}
+            BOX2D=${{ github.event.inputs.ext_box2d }}
+            BULLET=${{ github.event.inputs.ext_bullet }}
+            FREETYPE=${{ github.event.inputs.ext_freetype }}
+            TOOLS=${{ github.event.inputs.ext_tools }}
+            ANGLE=${{ github.event.inputs.ext_angle }}
+          fi
+
+          echo "ANDROID=$ANDROID" >> $GITHUB_ENV
+          echo "DESKTOP=$DESKTOP" >> $GITHUB_ENV
+          echo "HTML=$HTML" >> $GITHUB_ENV
+          echo "IOS=$IOS" >> $GITHUB_ENV
+          echo "BOX2D=$BOX2D" >> $GITHUB_ENV
+          echo "BULLET=$BULLET" >> $GITHUB_ENV
+          echo "FREETYPE=$FREETYPE" >> $GITHUB_ENV
+          echo "TOOLS=$TOOLS" >> $GITHUB_ENV
+          echo "ANGLE=$ANGLE" >> $GITHUB_ENV
+
+      - name: Build selected modules
         working-directory: libgdx-src
         run: |
-          ./gradlew clean
-          ./gradlew publishToMavenLocal
+          ./gradlew :gdx:build
 
-      - name: Prepare libgdx-pronto structure
+          if [ "$ANDROID" = "true" ]; then
+            ./gradlew :backends:gdx-backend-android:assembleRelease
+          fi
+
+          if [ "$DESKTOP" = "true" ]; then
+            ./gradlew :backends:gdx-backend-lwjgl3:build
+          fi
+
+          if [ "$HTML" = "true" ]; then
+            ./gradlew :backends:gdx-backend-gwt:build
+          fi
+
+          if [ "$IOS" = "true" ]; then
+            ./gradlew :backends:gdx-backend-robovm:build
+          fi
+
+          if [ "$BOX2D" = "true" ]; then
+            ./gradlew :extensions:gdx-box2d:gdx-box2d:build
+          fi
+
+          if [ "$BULLET" = "true" ]; then
+            ./gradlew :extensions:gdx-bullet:build
+          fi
+
+          if [ "$FREETYPE" = "true" ]; then
+            ./gradlew :extensions:gdx-freetype:build
+          fi
+
+          if [ "$TOOLS" = "true" ]; then
+            ./gradlew :extensions:gdx-tools:build
+          fi
+
+          if [ "$ANGLE" = "true" ]; then
+            ./gradlew :extensions:gdx-lwjgl3-angle:build
+          fi
+
+      - name: Prepare artifact
         run: |
-          mkdir -p libgdx-pronto/core
+          mkdir -p libgdx-artifact/{core,android,desktop,html,ios,extensions,natives/{windows,linux,macos}}
 
-          mkdir -p libgdx-pronto/desktop/natives/windows
-          mkdir -p libgdx-pronto/desktop/natives/linux
-          mkdir -p libgdx-pronto/desktop/natives/macos
+          cp libgdx-src/gdx/build/libs/*.jar libgdx-artifact/core/
 
-          mkdir -p libgdx-pronto/android/libs
-          mkdir -p libgdx-pronto/android/jniLibs/armeabi-v7a
-          mkdir -p libgdx-pronto/android/jniLibs/arm64-v8a
-          mkdir -p libgdx-pronto/android/jniLibs/x86
-          mkdir -p libgdx-pronto/android/jniLibs/x86_64
+          [ "$ANDROID" = "true" ] && cp libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar libgdx-artifact/android/ || true
+          [ "$DESKTOP" = "true" ] && cp libgdx-src/backends/gdx-backend-lwjgl3/build/libs/*.jar libgdx-artifact/desktop/ || true
 
-      - name: Copy core jars
-        run: |
-          cp ~/.m2/repository/com/badlogicgames/gdx/gdx/${LIBGDX_VERSION}/gdx-${LIBGDX_VERSION}.jar \
-             libgdx-pronto/core/
+          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*windows*.jar libgdx-artifact/natives/windows/ || true
+          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*linux*.jar libgdx-artifact/natives/linux/ || true
+          cp libgdx-src/backends/gdx-backend-lwjgl3/build/natives/*macos*.jar libgdx-artifact/natives/macos/ || true
 
-          cp ~/.m2/repository/com/badlogicgames/gdx/gdx/${LIBGDX_VERSION}/gdx-${LIBGDX_VERSION}-sources.jar \
-             libgdx-pronto/core/
-
-      - name: Copy desktop backend
-        run: |
-          cp ~/.m2/repository/com/badlogicgames/gdx/gdx-backend-lwjgl3/${LIBGDX_VERSION}/gdx-backend-lwjgl3-${LIBGDX_VERSION}.jar \
-             libgdx-pronto/desktop/
-
-          cp ~/.m2/repository/com/badlogicgames/gdx/gdx-backend-lwjgl3/${LIBGDX_VERSION}/gdx-backend-lwjgl3-${LIBGDX_VERSION}-sources.jar \
-             libgdx-pronto/desktop/
-
-      - name: Copy desktop natives
-        run: |
-          cp ~/.m2/repository/com/badlogicgames/gdx/gdx-platform/${LIBGDX_VERSION}/gdx-platform-${LIBGDX_VERSION}-natives-desktop.jar \
-             libgdx-pronto/desktop/natives/
-
-      - name: Copy Android backend
-        run: |
-          cp ~/.m2/repository/com/badlogicgames/gdx/gdx-backend-android/${LIBGDX_VERSION}/gdx-backend-android-${LIBGDX_VERSION}.jar \
-             libgdx-pronto/android/libs/
-
-      - name: Extract Android natives (.so)
-        run: |
-          unzip -o ~/.m2/repository/com/badlogicgames/gdx/gdx-platform/${LIBGDX_VERSION}/gdx-platform-${LIBGDX_VERSION}-natives-armeabi-v7a.jar \
-            -d libgdx-pronto/android/jniLibs/armeabi-v7a
-
-          unzip -o ~/.m2/repository/com/badlogicgames/gdx/gdx-platform/${LIBGDX_VERSION}/gdx-platform-${LIBGDX_VERSION}-natives-arm64-v8a.jar \
-            -d libgdx-pronto/android/jniLibs/arm64-v8a
-
-          unzip -o ~/.m2/repository/com/badlogicgames/gdx/gdx-platform/${LIBGDX_VERSION}/gdx-platform-${LIBGDX_VERSION}-natives-x86.jar \
-            -d libgdx-pronto/android/jniLibs/x86
-
-          unzip -o ~/.m2/repository/com/badlogicgames/gdx/gdx-platform/${LIBGDX_VERSION}/gdx-platform-${LIBGDX_VERSION}-natives-x86_64.jar \
-            -d libgdx-pronto/android/jniLibs/x86_64
-
-      - name: Generate README
-        run: |
-          cat <<EOF > libgdx-pronto/README.txt
-          libgdx-pronto
-          =================
-
-          Estrutura organizada manualmente a partir do libGDX oficial.
-          Todos os arquivos foram compilados localmente a partir do código-fonte oficial.
-
-          Core:
-          - gdx.jar
-          - gdx-sources.jar
-
-          Desktop:
-          - backend LWJGL3
-          - natives desktop
-
-          Android:
-          - backend Android
-          - natives por arquitetura (jniLibs)
-
-          Uso:
-          - Copiar manualmente para projetos
-          - Ou consumir em outro workflow automatizado
-          EOF
+          cp libgdx-src/extensions/**/build/libs/*.jar libgdx-artifact/extensions/ || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-pronto-${{ env.LIBGDX_VERSION }}
-          path: libgdx-pronto
+          name: libgdx-backends-natives-${{ env.LIBGDX_VERSION }}
+          path: libgdx-artifact
