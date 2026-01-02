@@ -1,0 +1,97 @@
+name: LibGDX – Android Reorganizer (Fake Structure)
+
+on:
+  workflow_run:
+    workflows:
+      - "LibGDX – Build completo e artefatos filtráveis"
+    types:
+      - completed
+
+jobs:
+  android-reorganizer:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (apenas para contexto)
+        uses: actions/checkout@v4
+
+      # =====================================================
+      # Baixar artefato do Workflow 1
+      # =====================================================
+      - name: Download artifact from Workflow 1
+        uses: actions/download-artifact@v4
+        with:
+          name: libgdx-artifact
+          path: input-artifact
+
+      # =====================================================
+      # Debug – preservar entrada original
+      # =====================================================
+      - name: Zip debug input artifact
+        run: |
+          mkdir -p debug
+          cd input-artifact
+          zip -r ../debug/workflow1-input-debug.zip .
+
+      # =====================================================
+      # Criar estrutura Android fake
+      # =====================================================
+      - name: Create Android fake structure
+        run: |
+          mkdir -p android-fake/android/libs
+          mkdir -p android-fake/android/src/jniLibs
+
+          mkdir -p android-fake/android/src/jniLibs/armeabi-v7a
+          mkdir -p android-fake/android/src/jniLibs/arm64-v8a
+          mkdir -p android-fake/android/src/jniLibs/x86
+          mkdir -p android-fake/android/src/jniLibs/x86_64
+
+      # =====================================================
+      # Copiar JARs (core, backend, extensões)
+      # =====================================================
+      - name: Copy JAR libraries
+        run: |
+          find input-artifact -name "*.jar" \
+            ! -name "*natives*" \
+            -exec cp {} android-fake/android/libs/ \;
+
+      # =====================================================
+      # Copiar nativos (.so) por arquitetura
+      # =====================================================
+      - name: Extract and place native libraries
+        run: |
+          for jar in $(find input-artifact -name "*natives-*.jar"); do
+            if [[ "$jar" == *"armeabi-v7a"* ]]; then
+              unzip -o "$jar" "*.so" -d android-fake/android/src/jniLibs/armeabi-v7a
+            elif [[ "$jar" == *"arm64-v8a"* ]]; then
+              unzip -o "$jar" "*.so" -d android-fake/android/src/jniLibs/arm64-v8a
+            elif [[ "$jar" == *"x86_64"* ]]; then
+              unzip -o "$jar" "*.so" -d android-fake/android/src/jniLibs/x86_64
+            elif [[ "$jar" == *"x86"* ]]; then
+              unzip -o "$jar" "*.so" -d android-fake/android/src/jniLibs/x86
+            fi
+          done
+
+      # =====================================================
+      # Empacotar resultado final
+      # =====================================================
+      - name: Zip Android fake structure
+        run: |
+          cd android-fake
+          zip -r ../android-fake-structure.zip .
+
+      # =====================================================
+      # Upload artefatos
+      # =====================================================
+      - name: Upload Android fake structure
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-fake-structure
+          path: android-fake-structure.zip
+
+      - name: Upload debug input artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow1-input-debug
+          path: debug/workflow1-input-debug.zip
