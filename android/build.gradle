@@ -1,29 +1,21 @@
-// ./android/build.gradle [Gradle v8.11.1]
+// ./android/build.gradle
+// Android Module — Offline / libGDX Ready
+// Compatível com Gradle v8.14.3 + AGP 8.x
 
 plugins {
     id 'com.android.application'
 }
 
 android {
-    namespace "com.mygdx.game"
-    compileSdkVersion 35
 
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src']
-            aidl.srcDirs = ['src']
-            renderscript.srcDirs = ['src']
-            res.srcDirs = ['res']
-            assets.srcDirs = ['assets']
-            jniLibs.srcDirs = ['src/jniLibs']
-        }
-    }
+    namespace "com.mygdx.game"
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.mygdx.game"
-        minSdkVersion 26
-        targetSdkVersion 35
+        minSdk 21
+        targetSdk 35
+
         versionCode 1
         versionName "0.0.1"
     }
@@ -32,78 +24,68 @@ android {
         debug {
             minifyEnabled false
             shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
         release {
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-// ✅ Task para copiar nativos
-tasks.register("copyAndroidNatives") {
-    inputs.files(configurations.natives)
-    outputs.dir("src/jniLibs/arm64-v8a")
-    outputs.dir("src/jniLibs/armeabi-v7a")
-    outputs.dir("src/jniLibs/x86_64")
-    outputs.dir("src/jniLibs/x86")
-
-    doFirst {
-        file("src/jniLibs/arm64-v8a/").mkdirs()
-        file("src/jniLibs/armeabi-v7a/").mkdirs()
-        file("src/jniLibs/x86_64/").mkdirs()
-        file("src/jniLibs/x86/").mkdirs()
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
-    configurations.natives.copy().files.each { jar ->
-        def outputDir = null
-        if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("src/jniLibs/arm64-v8a")
-        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("src/jniLibs/armeabi-v7a")
-        if (jar.name.endsWith("natives-x86_64.jar")) outputDir = file("src/jniLibs/x86_64")
-        if (jar.name.endsWith("natives-x86.jar")) outputDir = file("src/jniLibs/x86")
+    // 🔑 Estrutura OFFLINE
+    // Os Workflows colocam tudo aqui
+    sourceSets {
+        main {
+            manifest.srcFile "AndroidManifest.xml"
 
-        if (outputDir != null) {
-            copy {
-                from zipTree(jar)
-                into outputDir
-                include "*.so"
-                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-            }
+            java.srcDirs = ["src"]
+            res.srcDirs = ["res"]
+            assets.srcDirs = ["assets"]
+
+            // Nativos finais (Workflow 3)
+            jniLibs.srcDirs = [
+                "src/jniLibs",
+                "libs"
+            ]
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += [
+                "META-INF/*.kotlin_module",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*"
+            ]
         }
     }
 }
 
-// ✅ Task para copiar backend Android jar para libs/
-tasks.register("copyBackendJar") {
-    doLast {
-        def backend = configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.find {
-            it.moduleVersion.id.group == "com.badlogicgames.gdx" && it.name == "gdx-backend-android"
-        }?.file
-        if (backend) {
-            copy {
-                from backend
-                into "libs"
-            }
-            println "✅ Copiado gdx-backend-android.jar para android/libs/"
-        } else {
-            println "⚠️ gdx-backend-android.jar não encontrado em runtimeClasspath"
-        }
-    }
-}
+dependencies {
 
-// ✅ Garantir ordem correta das tasks
-tasks.withType(com.android.build.gradle.tasks.PackageApplication).configureEach {
-    dependsOn(tasks.named("copyAndroidNatives"))
-}
-tasks.withType(JavaCompile).configureEach {
-    dependsOn(tasks.named("copyAndroidNatives"))
-}
+    // 🔹 Core do projeto
+    implementation project(":core")
 
-eclipse.project.name = appName + "-android"
+    // 🔹 Backend Android (copiado pelos Workflows)
+    // Se existir em libs/, entra automaticamente
+    compileOnly fileTree(dir: "libs", include: ["*.jar"])
+
+    // 🔹 AndroidX mínimo (necessário apenas se usado no código)
+    compileOnly "androidx.core:core:1.15.0"
+    compileOnly "androidx.fragment:fragment:1.8.5"
+
+    // 🔹 Testes (opcional)
+    testImplementation "junit:junit:4.13.2"
+}

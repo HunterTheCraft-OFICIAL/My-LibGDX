@@ -1,11 +1,12 @@
-// settings.gradle [Gradle v8.11.1]
+// settings.gradle (Raíz) [Gradle v8.14.3]
 
 rootProject.name = "My-LibGDX"
 
-// Inclui todos os módulos do projeto (por enquanto desativado)
+// Módulos ativos
+include("core")
+include("android")
 
-include 'core'
-include 'android'
-include 'desktop'
-//include 'ios'
-// include 'html'
+// Módulos opcionais (template libGDX)
+// include("desktop")
+// include("ios")
+// include("html")

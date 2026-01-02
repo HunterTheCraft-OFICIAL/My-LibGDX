@@ -1,4 +1,4 @@
-// ./core/build.gradle
+// ./core/build.gradle (Gradle v8.14.3)
 
 plugins {
     id "java-library"
@@ -6,18 +6,13 @@ plugins {
 }
 
 java {
-    // ✅ define a versão da linguagem Java
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) // AGP 8.x exige JDK 17
+        languageVersion = JavaLanguageVersion.of(17)
     }
-
-    // Se preferir sem toolchain:
-    // sourceCompatibility = JavaVersion.VERSION_17
-    // targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = "UTF-8"   // ✅ substitui o [compileJava, compileTestJava]*.options*.encoding
+    options.encoding = "UTF-8"
 }
 
 sourceSets {
@@ -26,6 +21,37 @@ sourceSets {
             srcDirs = ["src/"]
         }
     }
+}
+
+/*
+ * O core NÃO resolve dependências.
+ * Ele apenas consome JARs já resolvidos
+ * pelos Workflows (estrutura final em android/libs).
+ */
+dependencies {
+
+    // 🔹 LibGDX core
+    compileOnly fileTree(
+        dir: "../android/libs",
+        include: ["gdx*.jar"]
+    )
+
+    // 🔹 Extensões libGDX (se existirem)
+    compileOnly fileTree(
+        dir: "../android/libs",
+        include: [
+            "gdx-box2d*.jar",
+            "gdx-freetype*.jar",
+            "gdx-ai*.jar",
+            "gdx-controllers*.jar"
+        ]
+    )
+
+    // 🔹 Qualquer outra lib local
+    compileOnly fileTree(
+        dir: "../android/libs",
+        include: ["*.jar"]
+    )
 }
 
 eclipse {
