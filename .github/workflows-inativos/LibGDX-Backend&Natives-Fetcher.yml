@@ -1,0 +1,133 @@
+name: LibGDX Backend & Natives Fetcher
+# LibGDX-Backend&Natives-Fetcher
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-backends:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 0️⃣ Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1️⃣ Configurar JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 2️⃣ Cache do Gradle
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 3️⃣ Permissão gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4️⃣ Criar diretórios organizados
+      - name: Create backend & natives directories
+        run: |
+          mkdir -p build/backend/android
+          mkdir -p build/backend/desktop
+          mkdir -p build/natives/android
+          mkdir -p build/natives/desktop
+          echo "✅ Diretórios criados."
+
+      # 5️⃣ Resolver e baixar backends e nativos
+      - name: Resolve backends & natives
+        run: |
+          set -e
+          echo "🔎 Resolving backends and natives..."
+
+          BACKENDS_ANDROID=("gdx-backend-android")
+          BACKENDS_DESKTOP=("gdx-backend-lwjgl")
+          NATIVES_ANDROID=("natives-armeabi-v7a" "natives-arm64-v8a" "natives-x86" "natives-x86_64")
+          NATIVES_DESKTOP=("natives-desktop")
+
+          # Android backend
+          for backend in "${BACKENDS_ANDROID[@]}"; do
+            if ./gradlew ":android:dependencies" | grep -q "$backend"; then
+              echo "✅ $backend resolvido."
+            else
+              echo "⚠️ $backend NÃO encontrado!"
+            fi
+          done
+
+          # Desktop backend
+          for backend in "${BACKENDS_DESKTOP[@]}"; do
+            if ./gradlew ":desktop:dependencies" | grep -q "$backend"; then
+              echo "✅ $backend resolvido."
+            else
+              echo "⚠️ $backend NÃO encontrado!"
+            fi
+          done
+
+          # Android natives
+          for native in "${NATIVES_ANDROID[@]}"; do
+            if ./gradlew ":android:dependencies" | grep -q "$native"; then
+              echo "✅ $native resolvido."
+            else
+              echo "⚠️ $native NÃO encontrado!"
+            fi
+          done
+
+          # Desktop natives
+          for native in "${NATIVES_DESKTOP[@]}"; do
+            if ./gradlew ":desktop:dependencies" | grep -q "$native"; then
+              echo "✅ $native resolvido."
+            else
+              echo "⚠️ $native NÃO encontrado!"
+            fi
+          done
+
+      # 6️⃣ Sumário no painel
+      - name: Summary of backend fetch
+        run: |
+          echo "## 🔧 LibGDX Backends & Natives Fetch Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Android Backends:" >> $GITHUB_STEP_SUMMARY
+          for backend in "${BACKENDS_ANDROID[@]}"; do
+            if ./gradlew ":android:dependencies" | grep -q "$backend"; then
+              echo "- ✅ $backend" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ $backend" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Desktop Backends:" >> $GITHUB_STEP_SUMMARY
+          for backend in "${BACKENDS_DESKTOP[@]}"; do
+            if ./gradlew ":desktop:dependencies" | grep -q "$backend"; then
+              echo "- ✅ $backend" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ $backend" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Android Natives:" >> $GITHUB_STEP_SUMMARY
+          for native in "${NATIVES_ANDROID[@]}"; do
+            if ./gradlew ":android:dependencies" | grep -q "$native"; then
+              echo "- ✅ $native" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ $native" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Desktop Natives:" >> $GITHUB_STEP_SUMMARY
+          for native in "${NATIVES_DESKTOP[@]}"; do
+            if ./gradlew ":desktop:dependencies" | grep -q "$native"; then
+              echo "- ✅ $native" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ $native" >> $GITHUB_STEP_SUMMARY
+            fi
+          done

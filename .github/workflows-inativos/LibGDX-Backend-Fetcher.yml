@@ -1,0 +1,111 @@
+name: LibGDX Backend Fetcher
+#LibGDX-Backend-Fetcher
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-backends:
+    runs-on: ubuntu-latest
+
+    env:
+      ANDROID_BACKEND_DIR: android/libs
+      DESKTOP_BACKEND_DIR: desktop/libs
+      NATIVES_DIR: android/src/jniLibs
+
+    steps:
+      # 1️⃣ Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3️⃣ Permissão gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4️⃣ Preparar pastas falsas
+      - name: Prepare fake backend structure
+        run: |
+          echo "✅ Criando diretórios de backend organizados"
+          mkdir -p $ANDROID_BACKEND_DIR
+          mkdir -p $DESKTOP_BACKEND_DIR
+          mkdir -p $NATIVES_DIR/arm64-v8a
+          mkdir -p $NATIVES_DIR/armeabi-v7a
+          mkdir -p $NATIVES_DIR/x86
+          mkdir -p $NATIVES_DIR/x86_64
+
+      # 5️⃣ Baixar e copiar todos os backends via Gradle
+      - name: Fetch and organize backends
+        run: |
+          echo "✅ Resolvendo e copiando JARs/nativos para estrutura organizada"
+          set -e
+          declare -A modules=(
+            ["android"]="gdx-backend-android"
+            ["desktop"]="gdx-backend-lwjgl"
+          )
+          declare -A natives=(
+            ["natives-arm64-v8a"]="arm64-v8a"
+            ["natives-armeabi-v7a"]="armeabi-v7a"
+            ["natives-x86"]="x86"
+            ["natives-x86_64"]="x86_64"
+          )
+
+          for module in "${!modules[@]}"; do
+            backend="${modules[$module]}"
+            echo "- Resolvendo $backend para $module"
+            jar=$(./gradlew -q :$module:dependencies --configuration runtimeClasspath | grep "$backend" | awk '{print $2}' | head -n1)
+            if [[ -f "$jar" ]]; then
+              dest_dir="${module}/libs"
+              mkdir -p "$dest_dir"
+              cp "$jar" "$dest_dir/"
+              echo "✔ Copiado $backend.jar para $dest_dir"
+            else
+              echo "⚠️ $backend não encontrado"
+            fi
+          done
+
+          # Nativos
+          echo "- Resolvendo nativos do Android"
+          for native_jar in $(./gradlew -q :android:dependencies --configuration natives | grep -E "gdx-platform.*natives" | awk '{print $2}'); do
+            for arch in "${!natives[@]}"; do
+              if [[ "$native_jar" == *"$arch"* ]]; then
+                dest="$NATIVES_DIR/${natives[$arch]}"
+                mkdir -p "$dest"
+                cp "$native_jar" "$dest/"
+                echo "✔ Copiado $(basename $native_jar) para $dest"
+              fi
+            done
+          done
+
+      # 6️⃣ Gerar sumário no painel
+      - name: Backend Fetch Summary
+        run: |
+          echo "## 📦 LibGDX Backend Fetch Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Android backends" >> $GITHUB_STEP_SUMMARY
+          ls -1 $ANDROID_BACKEND_DIR >> $GITHUB_STEP_SUMMARY || echo "Nenhum backend Android encontrado" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Desktop backends" >> $GITHUB_STEP_SUMMARY
+          ls -1 $DESKTOP_BACKEND_DIR >> $GITHUB_STEP_SUMMARY || echo "Nenhum backend Desktop encontrado" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Android Natives" >> $GITHUB_STEP_SUMMARY
+          for arch in arm64-v8a armeabi-v7a x86 x86_64; do
+            echo "- $arch:" >> $GITHUB_STEP_SUMMARY
+            ls -1 $NATIVES_DIR/$arch >> $GITHUB_STEP_SUMMARY || echo "  (nenhum arquivo)" >> $GITHUB_STEP_SUMMARY
+          done
+
+      # 7️⃣ Upload opcional para inspeção
+      - name: Upload organized backends
+        uses: actions/upload-artifact@v4
+        with:
+          name: Organized-Backends
+          path: |
+            android/libs
+            desktop/libs
+            android/src/jniLibs
