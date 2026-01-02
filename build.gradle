@@ -1,0 +1,155 @@
+// build.gradle [Gradle v8.11.1]
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        google()
+    }
+    
+    dependencies {
+        //classpath "org.apache.commons:commons-compress:1.21"   // 👈 força no classpath
+        classpath 'org.wisepersist:gwt-gradle-plugin:1.1.0'
+        //classpath 'org.wisepersist:gwt-gradle-plugin:1.0.13'
+        classpath 'org.gretty:gretty:4.0.3'
+        //classpath 'org.gretty:gretty:3.0.6'
+        //classpath 'org.gretty:gretty:3.0.2' // ❌ versão inexistente, substituída por 3.0.6
+        classpath 'com.android.tools.build:gradle:8.10.1'
+        //classpath 'com.android.tools.build:gradle:8.9.2'
+        //classpath 'com.android.tools.build:gradle:8.2.0'
+        //classpath 'com.android.tools.build:gradle:8.1.1'
+        //classpath 'com.android.tools.build:gradle:8.0.2' > 8.1.1 > 8.2.0
+        // ❌ ainda puxava commons-compress antigo
+        //classpath 'com.android.tools.build:gradle:7.0.4' // ❌ causava erro de parsing de SDK
+        //classpath 'com.android.tools.build:gradle:4.1.3' // ❌ muito antigo, incompatível com SDK atual
+        //classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.12'
+    }
+}
+
+allprojects {
+    apply plugin: "eclipse"
+
+    version = '1.0'
+    ext {
+        appName = "StressTest"
+        gdxVersion = '1.10.0'
+        roboVMVersion = '2.3.12'
+        box2DLightsVersion = '1.5'
+        ashleyVersion = '1.7.3'
+        aiVersion = '1.8.2'
+        gsonVersion = '2.8.6'
+        adsVersion = '17.2.1'
+        gdxControllersVersion = '2.1.0'
+        gdxPayVersion = '1.3.1'
+        libgdxCommonVersion = '0.0.5'
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        google()
+        gradlePluginPortal()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+    }
+
+}
+
+// Tentativa antiga de forçar commons-compress (removida)
+
+project(":android") {
+    apply plugin: "com.android.application"
+
+    // ✅ Configuração obrigatória no Android Gradle Plugin 8.x
+    android {
+        compileSdkVersion 35   // ajuste para a versão que você está usando
+
+        defaultConfig {
+            applicationId "com.hunterthecraft.stresstest"  // ajuste para o seu package real
+            minSdkVersion 26
+            targetSdkVersion 35
+            versionCode 1
+            versionName "1.0"
+        }
+
+        namespace "com.hunterthecraft.stresstest"  // ✅ campo exigido pelo AGP
+    }
+
+    // ✅ Configuração para nativos
+    configurations { natives }
+
+    dependencies {
+        // Core compartilhado
+        implementation project(":core")
+
+        // Backend Android
+        api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+
+        // Nativos LibGDX
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+
+        // Box2D
+        api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
+
+        // FreeType
+        api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
+
+        // Ashley ECS
+        api "com.badlogicgames.ashley:ashley:$ashleyVersion"
+
+        // AI
+        api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+
+        // Controllers
+        api "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion"
+
+        // Google Ads
+        implementation "com.google.android.gms:play-services-ads:$adsVersion"
+
+        // GDX Pay
+        implementation "com.badlogicgames.gdxpay:gdx-pay-android-googlebilling:$gdxPayVersion"
+    }
+}
+
+project(":core") {
+    apply plugin: "java-library"
+
+    dependencies {
+        api "com.badlogicgames.gdx:gdx:$gdxVersion"
+        api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+        api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        api "com.badlogicgames.ashley:ashley:$ashleyVersion"
+        api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+        api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
+        implementation "com.google.code.gson:gson:$gsonVersion"
+        implementation "com.badlogicgames.gdxpay:gdx-pay-client:$gdxPayVersion"
+        implementation "com.github.kendaozinho:libgdx-common:$libgdxCommonVersion"
+    }
+}
+//*/
+
+project(":desktop") {
+    apply plugin: "java-library"
+
+    dependencies {
+        implementation project(":core")
+        api "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
+        api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+        api "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
+        api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+        api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
+    }
+}
