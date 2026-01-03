@@ -1,192 +1,103 @@
-name: LibGDX – Build completo + Reorganização
+name: LibGDX – Build completo + Reorganização (SDK)
 
 on:
   workflow_dispatch:
-    inputs:
 
-      ####################################
-      # PLATAFORMAS
-      ####################################
-
-      platform_preset:
-        description: "Pré-configuração de Plataforma"
-        type: choice
-        options: [basico, completo, personalizado]
-        default: completo
-
-      desktop:
-        description: "Desktop (LWJGL)"
-        type: boolean
-        default: true
-
-      android:
-        description: "Android"
-        type: boolean
-        default: true
-
-      html:
-        description: "HTML / GWT"
-        type: boolean
-        default: false
-
-      ios:
-        description: "iOS"
-        type: boolean
-        default: false
-
-      ####################################
-      # EXTENSÕES
-      ####################################
-
-      extension_preset:
-        description: "Pré-configuração de Extensões"
-        type: choice
-        options: [nenhum, basico, completo, personalizado]
-        default: completo
-
-      box2d:
-        description: "Box2D"
-        type: boolean
-        default: true
-
-      freetype:
-        description: "FreeType"
-        type: boolean
-        default: true
-
-      controllers:
-        description: "Controllers"
-        type: boolean
-        default: true
-
-      tools:
-        description: "gdx-tools"
-        type: boolean
-        default: true
-
-      ####################################
-      # VERSÃO (INFORMATIVA)
-      ####################################
-
-      libgdx_version:
-        description: "Versão do libGDX"
-        type: choice
-        options: [1.12.0, 1.13.0, 1.14.0]
-        default: 1.14.0
-
-env:
-  LIBGDX_VERSION: 1.14.0
+permissions:
+  contents: read
+  actions: read
 
 jobs:
-  ####################################
-  # JOB 1 — BUILD COMPLETO
-  ####################################
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Clone official libGDX
-        run: |
-          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
-
-      - name: Grant execute permission for Gradle
-        run: chmod +x libgdx-src/gradlew
-
-      - name: Build all LibGDX modules
-        working-directory: libgdx-src
-        run: ./gradlew build
-
-      - name: Prepare artifact structure
-        run: |
-          ROOT=artifact/libgdx
-          mkdir -p $ROOT/{backends,extensions,natives,tools}
-
-          cp libgdx-src/gdx/build/libs/*.jar $ROOT/ || true
-          cp -r libgdx-src/backends $ROOT/ || true
-          cp -r libgdx-src/extensions $ROOT/ || true
-          cp -r libgdx-src/extensions/gdx-tools/build/libs $ROOT/tools || true
-          cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
-
-      - name: Filter artifact content
-        run: |
-          ROOT=artifact/libgdx
-
-          ####################################
-          # PLATAFORMAS
-          ####################################
-
-          if [ "${{ github.event.inputs.platform_preset }}" != "personalizado" ]; then
-            if [ "${{ github.event.inputs.platform_preset }}" = "basico" ]; then
-              rm -rf $ROOT/backends/{android,html,ios,ios-metalangle}
-              rm -rf $ROOT/natives/{android,ios}
-            fi
-          else
-            [ "${{ github.event.inputs.desktop }}" != "true" ] && rm -rf $ROOT/backends/desktop $ROOT/natives/desktop
-            [ "${{ github.event.inputs.android }}" != "true" ] && rm -rf $ROOT/backends/android $ROOT/natives/android
-            [ "${{ github.event.inputs.html }}" != "true" ] && rm -rf $ROOT/backends/html
-            [ "${{ github.event.inputs.ios }}" != "true" ] && rm -rf $ROOT/backends/{ios,ios-metalangle} $ROOT/natives/ios
-          fi
-
-          ####################################
-          # EXTENSÕES
-          ####################################
-
-          if [ "${{ github.event.inputs.extension_preset }}" = "nenhum" ]; then
-            rm -rf $ROOT/extensions
-          fi
-
-          if [ "${{ github.event.inputs.extension_preset }}" = "basico" ]; then
-            rm -rf $ROOT/extensions/{gdx-box2d,gdx-controllers}
-          fi
-
-          if [ "${{ github.event.inputs.extension_preset }}" = "personalizado" ]; then
-            [ "${{ github.event.inputs.box2d }}" != "true" ] && rm -rf $ROOT/extensions/gdx-box2d
-            [ "${{ github.event.inputs.freetype }}" != "true" ] && rm -rf $ROOT/extensions/gdx-freetype
-            [ "${{ github.event.inputs.controllers }}" != "true" ] && rm -rf $ROOT/extensions/gdx-controllers
-            [ "${{ github.event.inputs.tools }}" != "true" ] && rm -rf $ROOT/tools
-          fi
-
-      - name: Upload raw LibGDX artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: libgdx-raw
-          path: artifact
-
-  ####################################
-  # JOB 2 — REORGANIZAÇÃO
-  ####################################
   reorganize:
-    needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download raw LibGDX artifact
+      # 1️⃣ Download do artefato bruto
+      - name: Download libGDX raw artifact
         uses: actions/download-artifact@v4
         with:
           name: libgdx-raw
           path: input
 
-      - name: Debug received artifact
+      # 2️⃣ Debug inicial
+      - name: Inspect raw artifact
         run: |
-          echo "📦 Conteúdo recebido:"
+          echo "📦 Conteúdo bruto:"
           ls -R input
 
-      - name: Normalize structure
+      # 3️⃣ Criar estrutura fictícia do SDK
+      - name: Create SDK structure
         run: |
-          mkdir -p output
-          cp -r input/* output/
+          SDK=output/libgdx-sdk
+          mkdir -p \
+            $SDK/core \
+            $SDK/backends/{desktop,android,html,ios} \
+            $SDK/extensions \
+            $SDK/natives/{desktop,android} \
+            $SDK/metadata
 
-      - name: Upload reorganized LibGDX artifact
+      # 4️⃣ Core
+      - name: Organize core
+        run: |
+          SDK=output/libgdx-sdk
+          cp input/libgdx/gdx-*.jar $SDK/core/
+
+      # 5️⃣ Backends
+      - name: Organize backends
+        run: |
+          SDK=output/libgdx-sdk
+          BACKENDS=input/libgdx/backends
+
+          cp $BACKENDS/build/libs/*.jar $SDK/backends/desktop/ || true
+          cp $BACKENDS/gdx-backend-android/build/outputs/aar/*.aar $SDK/backends/android/ || true
+          cp -r $BACKENDS/gdx-backends-gwt $SDK/backends/html/ || true
+          cp -r $BACKENDS/gdx-backend-robovm* $SDK/backends/ios/ || true
+
+      # 6️⃣ Extensões
+      - name: Organize extensions
+        run: |
+          SDK=output/libgdx-sdk
+          cp -r input/libgdx/extensions/* $SDK/extensions/
+
+      # 7️⃣ Nativos Desktop
+      - name: Organize desktop natives
+        run: |
+          SDK=output/libgdx-sdk
+          cp -r input/libgdx/natives/* $SDK/natives/desktop/ || true
+
+      # 8️⃣ Nativos Android (ABI-ready)
+      - name: Organize Android natives
+        run: |
+          SDK=output/libgdx-sdk
+          ANDROID=input/libgdx/backends/gdx-backend-android/build/intermediates
+
+          mkdir -p $SDK/natives/android
+
+          find $ANDROID -name "*.so" | while read so; do
+            ABI=$(echo "$so" | grep -oE 'armeabi-v7a|arm64-v8a|x86|x86_64')
+            if [ -n "$ABI" ]; then
+              mkdir -p $SDK/natives/android/$ABI
+              cp "$so" $SDK/natives/android/$ABI/
+            fi
+          done
+
+      # 9️⃣ Metadata
+      - name: Generate metadata
+        run: |
+          SDK=output/libgdx-sdk
+          echo "libGDX SDK (organized)" > $SDK/metadata/version.txt
+          date >> $SDK/metadata/version.txt
+
+          tree -d $SDK > $SDK/metadata/structure.txt
+
+      # 🔟 Limpeza de lixo
+      - name: Cleanup build leftovers
+        run: |
+          find output -type d -name build -o -name tmp -o -name intermediates | xargs rm -rf || true
+
+      # 1️⃣1️⃣ Upload final
+      - name: Upload organized SDK
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-reorganized
+          name: libgdx-sdk-organized
           path: output

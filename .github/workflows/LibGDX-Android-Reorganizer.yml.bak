@@ -1,44 +1,103 @@
-name: LibGDX – Workflow 2 (Reorganiza Backends + Nativos)
+name: LibGDX – Build completo + Reorganização (SDK)
 
 on:
-  workflow_run:
-    workflows:
-      - LibGDX – Build completo e artefato filtrável
-    types:
-      - completed
+  workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
+  actions: read
 
 jobs:
   reorganize:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download LibGDX artifact from Workflow 1
+      # 1️⃣ Download do artefato bruto
+      - name: Download libGDX raw artifact
         uses: actions/download-artifact@v4
         with:
-          run-id: ${{ github.event.workflow_run.id }}
-          name: libgdx-1.14.0          # 🔥 OBRIGATÓRIO
-          path: input-artifacts
+          name: libgdx-raw
+          path: input
 
-      - name: Debug received artifacts
+      # 2️⃣ Debug inicial
+      - name: Inspect raw artifact
         run: |
-          echo "📦 Artefatos recebidos:"
-          ls -R input-artifacts
+          echo "📦 Conteúdo bruto:"
+          ls -R input
 
-      - name: Normalize structure
+      # 3️⃣ Criar estrutura fictícia do SDK
+      - name: Create SDK structure
         run: |
-          mkdir -p output
-          cp -r input-artifacts/* output/
+          SDK=output/libgdx-sdk
+          mkdir -p \
+            $SDK/core \
+            $SDK/backends/{desktop,android,html,ios} \
+            $SDK/extensions \
+            $SDK/natives/{desktop,android} \
+            $SDK/metadata
 
-      - name: Upload reorganized artifact
+      # 4️⃣ Core
+      - name: Organize core
+        run: |
+          SDK=output/libgdx-sdk
+          cp input/libgdx/gdx-*.jar $SDK/core/
+
+      # 5️⃣ Backends
+      - name: Organize backends
+        run: |
+          SDK=output/libgdx-sdk
+          BACKENDS=input/libgdx/backends
+
+          cp $BACKENDS/build/libs/*.jar $SDK/backends/desktop/ || true
+          cp $BACKENDS/gdx-backend-android/build/outputs/aar/*.aar $SDK/backends/android/ || true
+          cp -r $BACKENDS/gdx-backends-gwt $SDK/backends/html/ || true
+          cp -r $BACKENDS/gdx-backend-robovm* $SDK/backends/ios/ || true
+
+      # 6️⃣ Extensões
+      - name: Organize extensions
+        run: |
+          SDK=output/libgdx-sdk
+          cp -r input/libgdx/extensions/* $SDK/extensions/
+
+      # 7️⃣ Nativos Desktop
+      - name: Organize desktop natives
+        run: |
+          SDK=output/libgdx-sdk
+          cp -r input/libgdx/natives/* $SDK/natives/desktop/ || true
+
+      # 8️⃣ Nativos Android (ABI-ready)
+      - name: Organize Android natives
+        run: |
+          SDK=output/libgdx-sdk
+          ANDROID=input/libgdx/backends/gdx-backend-android/build/intermediates
+
+          mkdir -p $SDK/natives/android
+
+          find $ANDROID -name "*.so" | while read so; do
+            ABI=$(echo "$so" | grep -oE 'armeabi-v7a|arm64-v8a|x86|x86_64')
+            if [ -n "$ABI" ]; then
+              mkdir -p $SDK/natives/android/$ABI
+              cp "$so" $SDK/natives/android/$ABI/
+            fi
+          done
+
+      # 9️⃣ Metadata
+      - name: Generate metadata
+        run: |
+          SDK=output/libgdx-sdk
+          echo "libGDX SDK (organized)" > $SDK/metadata/version.txt
+          date >> $SDK/metadata/version.txt
+
+          tree -d $SDK > $SDK/metadata/structure.txt
+
+      # 🔟 Limpeza de lixo
+      - name: Cleanup build leftovers
+        run: |
+          find output -type d -name build -o -name tmp -o -name intermediates | xargs rm -rf || true
+
+      # 1️⃣1️⃣ Upload final
+      - name: Upload organized SDK
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-reorganized
+          name: libgdx-sdk-organized
           path: output
