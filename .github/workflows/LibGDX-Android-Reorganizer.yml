@@ -1,73 +1,53 @@
-name: LibGDX – Build completo + SDK organizado
+name: LibGDX – Build completo + SDK + Projeto organizado
 
 on:
   workflow_dispatch:
     inputs:
 
       ####################################
-      # PLATAFORMAS (APENAS DIAGNÓSTICO)
+      # PLATAFORMAS (DEBUG / VALIDAÇÃO)
       ####################################
-
-      platform_preset:
-        description: "Pré-configuração de Plataforma (diagnóstico)"
-        type: choice
-        options: [basico, completo, personalizado]
-        default: completo
-
       desktop:
-        description: "Desktop (diagnóstico)"
+        description: "Desktop"
         type: boolean
         default: true
 
       android:
-        description: "Android (diagnóstico)"
+        description: "Android"
         type: boolean
         default: true
 
       html:
-        description: "HTML / GWT (diagnóstico)"
+        description: "HTML"
         type: boolean
-        default: false
+        default: true
 
       ios:
-        description: "iOS (diagnóstico)"
+        description: "iOS"
         type: boolean
-        default: false
+        default: true
 
       ####################################
-      # EXTENSÕES (APENAS DIAGNÓSTICO)
+      # EXTENSÕES (DEBUG / VALIDAÇÃO)
       ####################################
-
-      extension_preset:
-        description: "Pré-configuração de Extensões (diagnóstico)"
-        type: choice
-        options: [nenhum, basico, completo, personalizado]
-        default: completo
-
       box2d:
-        description: "Box2D (diagnóstico)"
+        description: "Box2D"
         type: boolean
         default: true
 
       freetype:
-        description: "FreeType (diagnóstico)"
+        description: "FreeType"
         type: boolean
         default: true
 
       controllers:
-        description: "Controllers (diagnóstico)"
-        type: boolean
-        default: true
-
-      tools:
-        description: "gdx-tools (diagnóstico)"
+        description: "Controllers"
         type: boolean
         default: true
 
       ####################################
-      # VERSÃO
+      # VERSÃO (INFORMATIVA)
       ####################################
-
       libgdx_version:
         description: "Versão do libGDX"
         type: choice
@@ -79,9 +59,13 @@ env:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  build-sdk:
+  ####################################
+  # JOB 1 — BUILD BRUTO
+  ####################################
+  build-raw:
     runs-on: ubuntu-latest
 
     steps:
@@ -97,87 +81,122 @@ jobs:
       - name: Clone libGDX
         run: |
           git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
-          chmod +x libgdx-src/gradlew
 
-      - name: Build libGDX (FULL)
+      - name: Grant Gradle permission
+        run: chmod +x libgdx-src/gradlew
+
+      - name: Build libGDX (full)
         working-directory: libgdx-src
         run: ./gradlew build
 
-      ####################################
-      # ARTEFATO BRUTO (DEBUG)
-      ####################################
-
-      - name: Create raw artifact
+      - name: Prepare raw artifact
         run: |
-          RAW=artifact/raw/libgdx
-          mkdir -p $RAW
-          cp -r libgdx-src/* $RAW/
+          ROOT=artifact/libgdx
+          mkdir -p $ROOT
+
+          cp libgdx-src/gdx/build/libs/*.jar $ROOT/ || true
+          cp -r libgdx-src/backends $ROOT/ || true
+          cp -r libgdx-src/extensions $ROOT/ || true
+          cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
 
       - name: Upload raw artifact
         uses: actions/upload-artifact@v4
         with:
           name: libgdx-raw
-          path: artifact/raw
+          path: artifact
 
-      ####################################
-      # SDK ORGANIZADO
-      ####################################
+  ####################################
+  # JOB 2 — SDK ORGANIZADO
+  ####################################
+  organize-sdk:
+    needs: build-raw
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download raw artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libgdx-raw
+          path: input
 
       - name: Create SDK structure
         run: |
-          SDK=artifact/sdk/libgdx-sdk
+          SDK=output/libgdx-sdk
           mkdir -p \
             $SDK/core \
             $SDK/backends/{desktop,android,html,ios} \
             $SDK/extensions \
-            $SDK/natives/{desktop,android} \
-            $SDK/metadata
+            $SDK/natives/{desktop,android}
 
-      - name: Core
-        run: |
-          cp libgdx-src/gdx/build/libs/*.jar artifact/sdk/libgdx-sdk/core/
+          # Core
+          cp input/libgdx/gdx-*.jar $SDK/core/ || true
 
-      - name: Backends
-        run: |
-          cp libgdx-src/backends/build/libs/*.jar artifact/sdk/libgdx-sdk/backends/desktop/ || true
-          cp libgdx-src/backends/gdx-backend-android/build/outputs/aar/*.aar artifact/sdk/libgdx-sdk/backends/android/ || true
-          cp -r libgdx-src/backends/gdx-backends-gwt artifact/sdk/libgdx-sdk/backends/html/ || true
-          cp -r libgdx-src/backends/gdx-backend-robovm* artifact/sdk/libgdx-sdk/backends/ios/ || true
+          # Backends
+          cp input/libgdx/backends/gdx-backend-lwjgl*/build/libs/*.jar $SDK/backends/desktop/ || true
+          cp input/libgdx/backends/gdx-backend-android/build/outputs/aar/*.aar $SDK/backends/android/ || true
+          cp -r input/libgdx/backends/gdx-backends-gwt $SDK/backends/html/ || true
+          cp -r input/libgdx/backends/gdx-backend-robovm* $SDK/backends/ios/ || true
 
-      - name: Extensions
-        run: |
-          cp -r libgdx-src/extensions/* artifact/sdk/libgdx-sdk/extensions/
+          # Extensions
+          cp -r input/libgdx/extensions/* $SDK/extensions/ || true
 
-      - name: Desktop natives
-        run: |
-          cp -r libgdx-src/gdx-platform/build/natives/* artifact/sdk/libgdx-sdk/natives/desktop/ || true
+          # Desktop natives
+          cp -r input/libgdx/natives/* $SDK/natives/desktop/ || true
 
-      - name: Android natives (ABI)
-        run: |
-          SDK=artifact/sdk/libgdx-sdk/natives/android
-          ANDROID=libgdx-src/backends/gdx-backend-android/build
-          find $ANDROID -name "*.so" | while read so; do
+          # Android natives (preserva nomes antigos)
+          find input -name "*.so" | while read so; do
             ABI=$(echo "$so" | grep -oE 'armeabi-v7a|arm64-v8a|x86|x86_64')
             if [ -n "$ABI" ]; then
-              mkdir -p $SDK/$ABI
-              cp "$so" $SDK/$ABI/
+              mkdir -p $SDK/natives/android/$ABI
+              cp "$so" $SDK/natives/android/$ABI/
             fi
           done
 
-      - name: Metadata
-        run: |
-          META=artifact/sdk/libgdx-sdk/metadata
-          echo "libGDX SDK" > $META/version.txt
-          echo "Version: $LIBGDX_VERSION" >> $META/version.txt
-          date >> $META/version.txt
-
-          echo "Inputs usados:" > $META/inputs.txt
-          echo "${{ toJson(github.event.inputs) }}" >> $META/inputs.txt
-
-          tree -d artifact/sdk/libgdx-sdk > $META/structure.txt
-
-      - name: Upload SDK organized
+      - name: Upload SDK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-sdk-organized
-          path: artifact/sdk
+          name: libgdx-sdk-organizado
+          path: output
+
+  ####################################
+  # JOB 3 — ESTRUTURA DE PROJETO REAL
+  ####################################
+  organize-project:
+    needs: organize-sdk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download SDK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libgdx-sdk-organizado
+          path: input
+
+      - name: Create project-like structure
+        run: |
+          ROOT=output/project
+          mkdir -p \
+            $ROOT/core/libs \
+            $ROOT/desktop/libs \
+            $ROOT/android/libs \
+            $ROOT/android/src/main/jniLibs
+
+          # Core jars
+          cp input/libgdx-sdk/core/*.jar $ROOT/core/libs/ || true
+          cp input/libgdx-sdk/extensions/**/*.jar $ROOT/core/libs/ || true
+
+          # Desktop
+          cp input/libgdx-sdk/backends/desktop/*.jar $ROOT/desktop/libs/ || true
+          cp input/libgdx-sdk/natives/desktop/**/* $ROOT/desktop/libs/ || true
+
+          # Android jars
+          cp input/libgdx-sdk/backends/android/* $ROOT/android/libs/ || true
+
+          # Android natives (AIDE / legado)
+          cp -r input/libgdx-sdk/natives/android/* $ROOT/android/src/main/jniLibs/ || true
+
+      - name: Upload project structure artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgdx-project-structure
+          path: output
