@@ -9,79 +9,69 @@ on:
 
 jobs:
   reorganize:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Download do artefato do Workflow 1
-      - name: Download artifact from Workflow 1
+      # 1️⃣ Checkout (apenas para contexto)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Baixar artefato do Workflow 1
+      - name: Download LibGDX artifact (Workflow 1)
         uses: actions/download-artifact@v4
         with:
+          run-id: ${{ github.event.workflow_run.id }}
           path: input-artifact
 
-      # 2️⃣ Ver estrutura recebida (debug)
-      - name: Debug – List received files
+      # 3️⃣ Debug – listar conteúdo recebido
+      - name: 📦 Conteúdo recebido
         run: |
-          echo "📦 Conteúdo recebido:"
+          echo "📂 Estrutura do artefato:"
           ls -R input-artifact
 
-      # 3️⃣ Criar estrutura Android fake
-      - name: Prepare Android fake structure
+      # 4️⃣ Criar estrutura Android FAKE
+      - name: Criar estrutura Android fake
         run: |
-          ROOT=output/android-fake
-          mkdir -p $ROOT/{core,android}
+          mkdir -p output/android/libs
+          mkdir -p output/android/src/jniLibs/{arm64-v8a,armeabi-v7a,x86_64,x86}
+          mkdir -p output/android/extensions
 
-          # Libs Java
-          mkdir -p $ROOT/core/libs
-          mkdir -p $ROOT/android/libs
-
-          # Nativos Android
-          mkdir -p $ROOT/android/jniLibs/{armeabi-v7a,arm64-v8a,x86,x86_64}
-
-      # 4️⃣ Copiar JARs principais
-      - name: Copy core and backend JARs
+      # 5️⃣ Copiar backend Android (.jar)
+      - name: Copiar backend Android
         run: |
-          SRC=input-artifact
-          ROOT=output/android-fake
+          find input-artifact -name "gdx-backend-android*.jar" -exec cp {} output/android/libs/ \;
 
-          # Core
-          cp $SRC/**/gdx*.jar $ROOT/core/libs/ || true
-
-          # Android backend
-          cp $SRC/**/backends/android/*.jar $ROOT/android/libs/ || true
-
-          # Extensões
-          cp $SRC/**/extensions/**/*.jar $ROOT/android/libs/ || true
-
-      # 5️⃣ Copiar nativos Android (.so)
-      - name: Copy Android native libraries
+      # 6️⃣ Copiar core libGDX
+      - name: Copiar gdx core
         run: |
-          SRC=input-artifact
-          JNI=output/android-fake/android/jniLibs
+          find input-artifact -maxdepth 3 -name "gdx-*.jar" -exec cp {} output/android/libs/ \;
 
-          find $SRC -type f -name "*.so" | while read so; do
-            case "$so" in
-              *armeabi-v7a*) cp "$so" "$JNI/armeabi-v7a/" ;;
-              *arm64-v8a*)   cp "$so" "$JNI/arm64-v8a/" ;;
-              *x86_64*)      cp "$so" "$JNI/x86_64/" ;;
-              *x86*)         cp "$so" "$JNI/x86/" ;;
-            esac
-          done || true
-
-      # 6️⃣ Debug final da estrutura
-      - name: Debug – Final structure
+      # 7️⃣ Copiar nativos Android (.so)
+      - name: Copiar nativos Android
         run: |
-          echo "📁 Estrutura final (Android fake):"
-          ls -R output/android-fake
+          ROOT=input-artifact
 
-      # 7️⃣ Gerar ZIP conferível
-      - name: Zip Android fake project
+          find $ROOT -name "*natives-arm64-v8a.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/arm64-v8a \;
+          find $ROOT -name "*natives-armeabi-v7a.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/armeabi-v7a \;
+          find $ROOT -name "*natives-x86_64.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/x86_64 \;
+          find $ROOT -name "*natives-x86.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/x86 \;
+
+      # 8️⃣ Copiar extensões (Box2D, FreeType, etc)
+      - name: Copiar extensões libGDX
         run: |
-          cd output
-          zip -r android-fake-project.zip android-fake
+          if [ -d "input-artifact/libgdx/extensions" ]; then
+            cp -r input-artifact/libgdx/extensions/* output/android/extensions/
+          fi
 
-      # 8️⃣ Upload do artefato
-      - name: Upload Android fake artifact
+      # 9️⃣ Debug – estrutura final
+      - name: 📂 Estrutura Android fake final
+        run: |
+          ls -R output
+
+      # 🔟 Upload artefato (Workflow 2)
+      - name: Upload Android Fake Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-fake-structure
-          path: output/android-fake-project.zip
+          name: libgdx-android-fake
+          path: output
