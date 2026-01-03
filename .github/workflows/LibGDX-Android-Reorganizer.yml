@@ -13,63 +13,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout (somente para versionamento / logs)
+      # 1️⃣ Checkout apenas para logs / versionamento
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Download do artefato GERADO pelo Workflow 1
-      - name: Download LibGDX artifact from previous workflow
+      # 2️⃣ Baixar TODOS os artefatos do Workflow 1
+      - name: Download artifacts from previous workflow
         uses: actions/download-artifact@v4
         with:
-          name: libgdx-1.14.0
           run-id: ${{ github.event.workflow_run.id }}
-          path: input-artifact
+          path: input-artifacts
 
-      # 3️⃣ Debug — confirmar estrutura recebida
-      - name: Debug artifact structure
+      # 3️⃣ Debug — validar se algo foi recebido
+      - name: Debug received artifacts
         run: |
-          echo "📦 Estrutura recebida do Workflow 1:"
-          ls -R input-artifact || true
+          echo "📦 Artefatos recebidos:"
+          ls -R input-artifacts || true
 
-      # 4️⃣ Preparar nova estrutura reorganizada
-      - name: Prepare reorganized structure
+          COUNT=$(ls input-artifacts | wc -l)
+          if [ "$COUNT" -eq "0" ]; then
+            echo "❌ Nenhum artefato recebido — abortando"
+            exit 1
+          fi
+
+      # 4️⃣ Normalizar estrutura (independente do nome)
+      - name: Normalize LibGDX structure
         run: |
-          mkdir -p output/{backends,natives,extensions,tools,core}
+          mkdir -p output
 
-          # Core
-          if [ -d "input-artifact/libgdx" ]; then
-            cp -r input-artifact/libgdx/* output/ || true
-          fi
+          for ART in input-artifacts/*; do
+            echo "➡ Processando artefato: $ART"
+            cp -r "$ART"/* output/ || true
+          done
 
-          # Backends
-          if [ -d "output/backends" ]; then
-            echo "✔ Backends detectados"
-          fi
-
-          # Natives
-          if [ -d "output/natives" ]; then
-            echo "✔ Natives detectados"
-          fi
-
-          # Extensions
-          if [ -d "output/extensions" ]; then
-            echo "✔ Extensions detectadas"
-          fi
-
-          # Tools
-          if [ -d "output/tools" ]; then
-            echo "✔ Tools detectadas"
-          fi
-
-      # 5️⃣ Debug — validar estrutura final
+      # 5️⃣ Debug final
       - name: Debug final structure
         run: |
-          echo "📂 Estrutura FINAL reorganizada:"
+          echo "📂 Estrutura final reorganizada:"
           ls -R output || true
 
-      # 6️⃣ Upload do artefato reorganizado (EXTRA / DEBUG)
-      - name: Upload reorganized LibGDX artifact
+      # 6️⃣ Upload (debug / base para próximos workflows)
+      - name: Upload reorganized artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libgdx-1.14.0-reorganized
+          name: libgdx-reorganized
           path: output
