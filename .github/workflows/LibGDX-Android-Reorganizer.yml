@@ -1,43 +1,191 @@
-name: LibGDX – Workflow 2 (Reorganiza Backends + Nativos)
+name: LibGDX – Build completo + Reorganização
 
 on:
-  workflow_run:
-    workflows:
-      - LibGDX – Build completo e artefato filtrável
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
 
-permissions:
-  actions: read
-  contents: read
+      ####################################
+      # PLATAFORMAS
+      ####################################
+
+      platform_preset:
+        description: "Pré-configuração de Plataforma"
+        type: choice
+        options: [basico, completo, personalizado]
+        default: completo
+
+      desktop:
+        description: "Desktop (LWJGL)"
+        type: boolean
+        default: true
+
+      android:
+        description: "Android"
+        type: boolean
+        default: true
+
+      html:
+        description: "HTML / GWT"
+        type: boolean
+        default: false
+
+      ios:
+        description: "iOS"
+        type: boolean
+        default: false
+
+      ####################################
+      # EXTENSÕES
+      ####################################
+
+      extension_preset:
+        description: "Pré-configuração de Extensões"
+        type: choice
+        options: [nenhum, basico, completo, personalizado]
+        default: completo
+
+      box2d:
+        description: "Box2D"
+        type: boolean
+        default: true
+
+      freetype:
+        description: "FreeType"
+        type: boolean
+        default: true
+
+      controllers:
+        description: "Controllers"
+        type: boolean
+        default: true
+
+      tools:
+        description: "gdx-tools"
+        type: boolean
+        default: true
+
+      ####################################
+      # VERSÃO (INFORMATIVA)
+      ####################################
+
+      libgdx_version:
+        description: "Versão do libGDX"
+        type: choice
+        options: [1.12.0, 1.13.0, 1.14.0]
+        default: 1.14.0
+
+env:
+  LIBGDX_VERSION: 1.14.0
 
 jobs:
-  reorganize:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  ####################################
+  # JOB 1 — BUILD COMPLETO
+  ####################################
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download LibGDX artifact from Workflow 1
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Clone official libGDX
+        run: |
+          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x libgdx-src/gradlew
+
+      - name: Build all LibGDX modules
+        working-directory: libgdx-src
+        run: ./gradlew build
+
+      - name: Prepare artifact structure
+        run: |
+          ROOT=artifact/libgdx
+          mkdir -p $ROOT/{backends,extensions,natives,tools}
+
+          cp libgdx-src/gdx/build/libs/*.jar $ROOT/ || true
+          cp -r libgdx-src/backends $ROOT/ || true
+          cp -r libgdx-src/extensions $ROOT/ || true
+          cp -r libgdx-src/extensions/gdx-tools/build/libs $ROOT/tools || true
+          cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
+
+      - name: Filter artifact content
+        run: |
+          ROOT=artifact/libgdx
+
+          ####################################
+          # PLATAFORMAS
+          ####################################
+
+          if [ "${{ github.event.inputs.platform_preset }}" != "personalizado" ]; then
+            if [ "${{ github.event.inputs.platform_preset }}" = "basico" ]; then
+              rm -rf $ROOT/backends/{android,html,ios,ios-metalangle}
+              rm -rf $ROOT/natives/{android,ios}
+            fi
+          else
+            [ "${{ github.event.inputs.desktop }}" != "true" ] && rm -rf $ROOT/backends/desktop $ROOT/natives/desktop
+            [ "${{ github.event.inputs.android }}" != "true" ] && rm -rf $ROOT/backends/android $ROOT/natives/android
+            [ "${{ github.event.inputs.html }}" != "true" ] && rm -rf $ROOT/backends/html
+            [ "${{ github.event.inputs.ios }}" != "true" ] && rm -rf $ROOT/backends/{ios,ios-metalangle} $ROOT/natives/ios
+          fi
+
+          ####################################
+          # EXTENSÕES
+          ####################################
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "nenhum" ]; then
+            rm -rf $ROOT/extensions
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "basico" ]; then
+            rm -rf $ROOT/extensions/{gdx-box2d,gdx-controllers}
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "personalizado" ]; then
+            [ "${{ github.event.inputs.box2d }}" != "true" ] && rm -rf $ROOT/extensions/gdx-box2d
+            [ "${{ github.event.inputs.freetype }}" != "true" ] && rm -rf $ROOT/extensions/gdx-freetype
+            [ "${{ github.event.inputs.controllers }}" != "true" ] && rm -rf $ROOT/extensions/gdx-controllers
+            [ "${{ github.event.inputs.tools }}" != "true" ] && rm -rf $ROOT/tools
+          fi
+
+      - name: Upload raw LibGDX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgdx-raw
+          path: artifact
+
+  ####################################
+  # JOB 2 — REORGANIZAÇÃO
+  ####################################
+  reorganize:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download raw LibGDX artifact
         uses: actions/download-artifact@v4
         with:
-          run-id: ${{ github.event.workflow_run.id }}
-          name: libgdx-1.14.0          # 🔥 OBRIGATÓRIO
-          path: input-artifacts
+          name: libgdx-raw
+          path: input
 
-      - name: Debug received artifacts
+      - name: Debug received artifact
         run: |
-          echo "📦 Artefatos recebidos:"
-          ls -R input-artifacts
+          echo "📦 Conteúdo recebido:"
+          ls -R input
 
       - name: Normalize structure
         run: |
           mkdir -p output
-          cp -r input-artifacts/* output/
+          cp -r input/* output/
 
-      - name: Upload reorganized artifact
+      - name: Upload reorganized LibGDX artifact
         uses: actions/upload-artifact@v4
         with:
           name: libgdx-reorganized

@@ -8,7 +8,7 @@ on:
       - completed
 
 permissions:
-  actions: read   # 🔑 ESSENCIAL
+  actions: read
   contents: read
 
 jobs:
@@ -20,29 +20,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download artifacts from previous workflow
+      - name: Download LibGDX artifact from Workflow 1
         uses: actions/download-artifact@v4
         with:
           run-id: ${{ github.event.workflow_run.id }}
+          name: libgdx-1.14.0          # 🔥 OBRIGATÓRIO
           path: input-artifacts
 
       - name: Debug received artifacts
         run: |
           echo "📦 Artefatos recebidos:"
-          ls -R input-artifacts || true
+          ls -R input-artifacts
 
-          if [ ! -d "input-artifacts" ]; then
-            echo "❌ Nenhum artefato encontrado"
-            exit 1
-          fi
-
-      - name: Normalize LibGDX structure
+      - name: Normalize structure
         run: |
           mkdir -p output
-          for ART in input-artifacts/*; do
-            echo "➡ Processando $ART"
-            cp -r "$ART"/* output/ || true
-          done
+          cp -r input-artifacts/* output/
 
       - name: Upload reorganized artifact
         uses: actions/upload-artifact@v4
