@@ -13,64 +13,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout (apenas para contexto)
-      - name: Checkout repository
+      - name: Checkout (contexto)
         uses: actions/checkout@v4
 
-      # 2️⃣ Baixar artefato do Workflow 1
+      # ✅ DOWNLOAD CORRETO DO ARTEFATO DO WF1
       - name: Download LibGDX artifact (Workflow 1)
         uses: actions/download-artifact@v4
         with:
           run-id: ${{ github.event.workflow_run.id }}
+          name: libgdx-1.14.0
           path: input-artifact
 
-      # 3️⃣ Debug – listar conteúdo recebido
-      - name: 📦 Conteúdo recebido
+      # 🔍 DEBUG OBRIGATÓRIO
+      - name: 📦 Verificar artefato recebido
         run: |
-          echo "📂 Estrutura do artefato:"
+          echo "📂 Conteúdo recebido:"
           ls -R input-artifact
 
-      # 4️⃣ Criar estrutura Android FAKE
+      # 🏗️ Estrutura Android fake
       - name: Criar estrutura Android fake
         run: |
           mkdir -p output/android/libs
           mkdir -p output/android/src/jniLibs/{arm64-v8a,armeabi-v7a,x86_64,x86}
           mkdir -p output/android/extensions
 
-      # 5️⃣ Copiar backend Android (.jar)
+      # 📦 Backend Android
       - name: Copiar backend Android
         run: |
           find input-artifact -name "gdx-backend-android*.jar" -exec cp {} output/android/libs/ \;
 
-      # 6️⃣ Copiar core libGDX
+      # 📦 Core libGDX
       - name: Copiar gdx core
         run: |
-          find input-artifact -maxdepth 3 -name "gdx-*.jar" -exec cp {} output/android/libs/ \;
+          find input-artifact -name "gdx-*.jar" -exec cp {} output/android/libs/ \;
 
-      # 7️⃣ Copiar nativos Android (.so)
-      - name: Copiar nativos Android
+      # 🔑 Nativos Android (.so)
+      - name: Extrair nativos Android
         run: |
-          ROOT=input-artifact
+          find input-artifact -name "*natives-arm64-v8a.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/arm64-v8a \;
+          find input-artifact -name "*natives-armeabi-v7a.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/armeabi-v7a \;
+          find input-artifact -name "*natives-x86_64.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/x86_64 \;
+          find input-artifact -name "*natives-x86.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/x86 \;
 
-          find $ROOT -name "*natives-arm64-v8a.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/arm64-v8a \;
-          find $ROOT -name "*natives-armeabi-v7a.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/armeabi-v7a \;
-          find $ROOT -name "*natives-x86_64.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/x86_64 \;
-          find $ROOT -name "*natives-x86.jar" -exec unzip -o {} "*.so" -d output/android/src/jniLibs/x86 \;
-
-      # 8️⃣ Copiar extensões (Box2D, FreeType, etc)
-      - name: Copiar extensões libGDX
+      # 🧩 Extensões
+      - name: Copiar extensões
         run: |
           if [ -d "input-artifact/libgdx/extensions" ]; then
             cp -r input-artifact/libgdx/extensions/* output/android/extensions/
           fi
 
-      # 9️⃣ Debug – estrutura final
-      - name: 📂 Estrutura Android fake final
+      # 📂 DEBUG FINAL
+      - name: 📂 Estrutura final
         run: |
           ls -R output
 
-      # 🔟 Upload artefato (Workflow 2)
-      - name: Upload Android Fake Artifact
+      # ⬆️ Upload
+      - name: Upload Android fake artifact
         uses: actions/upload-artifact@v4
         with:
           name: libgdx-android-fake
