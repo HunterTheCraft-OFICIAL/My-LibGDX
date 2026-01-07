@@ -95,8 +95,8 @@ jobs:
         run: ./gradlew :lwjgl3:build
 
       # 🌐 HTML / GWT
-      - name: Build HTML (GWT Dist)
-        run: ./gradlew :html:dist
+      # - name: Build HTML (GWT Dist)
+        # run: ./gradlew :html:dist
 
       # 🍎 iOS (RoboVM)
       # No Linux apenas valida o Gradle (não gera IPA real)
@@ -127,11 +127,11 @@ jobs:
           name: lwjgl3-jar
           path: lwjgl3/build/libs/*.jar
 
-      - name: Upload HTML/GWT Dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: html-dist
-          path: html/build/dist/**
+      #- name: Upload HTML/GWT Dist
+        # uses: actions/upload-artifact@v4
+        # with:
+          # name: html-dist
+          # path: html/build/dist/**
 
       - name: Upload Core JAR
         uses: actions/upload-artifact@v4
