@@ -1,0 +1,91 @@
+// ./android/build.gradle
+// Android Module — Offline / libGDX Ready
+// Compatível com Gradle v8.14.3 + AGP 8.x
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+
+    namespace "com.mygdx.game"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.mygdx.game"
+        minSdk 21
+        targetSdk 35
+
+        versionCode 1
+        versionName "0.0.1"
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            shrinkResources false
+        }
+
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // 🔑 Estrutura OFFLINE
+    // Os Workflows colocam tudo aqui
+    sourceSets {
+        main {
+            manifest.srcFile "AndroidManifest.xml"
+
+            java.srcDirs = ["src"]
+            res.srcDirs = ["res"]
+            assets.srcDirs = ["assets"]
+
+            // Nativos finais (Workflow 3)
+            jniLibs.srcDirs = [
+                "src/jniLibs",
+                "libs"
+            ]
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += [
+                "META-INF/*.kotlin_module",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*"
+            ]
+        }
+    }
+}
+
+dependencies {
+
+    // 🔹 Core do projeto
+    implementation project(":core")
+
+    // 🔹 Backend Android (copiado pelos Workflows)
+    // Se existir em libs/, entra automaticamente
+    compileOnly fileTree(dir: "libs", include: ["*.jar"])
+
+    // 🔹 AndroidX mínimo (necessário apenas se usado no código)
+    compileOnly "androidx.core:core:1.15.0"
+    compileOnly "androidx.fragment:fragment:1.8.5"
+
+    // 🔹 Testes (opcional)
+    testImplementation "junit:junit:4.13.2"
+}
