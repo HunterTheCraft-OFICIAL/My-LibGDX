@@ -1,5 +1,5 @@
 name: GDX-Liftoff Build
-# (.github/workflows/build.yml)
+// (.github/workflows/build.yml)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# 1️⃣ Estrutura do Workflow
+// 1️⃣ Estrutura do Workflow
 jobs:
   setup:
     name: Setup environment
@@ -50,7 +50,7 @@ jobs:
       - name: Verify Gradle Wrapper
         run: ./gradlew --version
 
-# 2️⃣ Job de Build completo
+// 2️⃣ Job de Build completo
 
 build:
     name: Build all platforms
@@ -95,7 +95,7 @@ build:
         run: ./gradlew :ios:createIPA || true
         # '|| true' para evitar falha em Ubuntu/Linux (iOS só funciona em macOS)
 
-# 4️⃣ Job de Upload dos artefatos finais
+// 4️⃣ Job de Upload dos artefatos finais
 
 artifacts:
     name: Upload built artifacts
