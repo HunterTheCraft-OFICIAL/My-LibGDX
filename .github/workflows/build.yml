@@ -1,5 +1,5 @@
 name: GDX-Liftoff Build
-# (.github/workflows/build.yml)
+# .github/workflows/build.yml
 
 on:
   push:
@@ -9,102 +9,97 @@ on:
   workflow_dispatch:
 
 jobs:
-  # 1️⃣ Estrutura do Workflow
+  # 1️⃣ SETUP DO AMBIENTE
   setup:
     name: Setup environment
     runs-on: ubuntu-latest
-    outputs:
-      gradle_cache: ${{ steps.cache-gradle.outputs.cache-hit }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
-      - name: Cache Gradle packages
-        id: cache-gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper/
-          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-
+      - name: Ensure Gradle Wrapper executable
+        run: chmod +x ./gradlew
 
-      - name: Install Android SDK & tools
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: true
-          emulator-options: '-no-window -no-audio'
-
-      - name: Download RoboVM
-        run: echo "RoboVM plugin é usado via Gradle, não requer SDK externo."
+      - name: Install required CLI tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tree zip unzip
 
       - name: Verify Gradle Wrapper
         run: ./gradlew --version
 
-  # 2️⃣ Job de Build completo
+  # 2️⃣ BUILD COMPLETO + DEPURAÇÃO
   build:
     name: Build all platforms
     runs-on: ubuntu-latest
     needs: setup
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
-      - name: Set executable for Gradlew
+      - name: Ensure Gradle Wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Download all dependencies
+      # 🔽 Baixa TODAS as dependências antes de compilar
+      - name: Download all Gradle dependencies
         run: ./gradlew --refresh-dependencies
 
-      - name: Verify dependencies and structure (Debug Artifact)
+      # 🔍 Artefato EXTRA de auditoria (estrutura + libs)
+      - name: Generate dependency & structure report (Debug)
         run: |
           mkdir -p build/debug-libs
           ./gradlew dependencies > build/debug-libs/dependencies.txt
           tree -a > build/debug-libs/structure.txt
         continue-on-error: true
 
-      - name: Archive debug artifact
+      - name: Upload debug inspection artifact
         uses: actions/upload-artifact@v4
         with:
           name: debug-libs
           path: build/debug-libs
 
+      # 🧠 CORE
       - name: Build Core
         run: ./gradlew :core:build
 
-      - name: Build Android
+      # 🤖 ANDROID (sem emulador)
+      - name: Build Android (Debug APK)
         run: ./gradlew :android:assembleDebug
 
-      - name: Build LWJGL3 (Desktop)
+      # 🖥️ DESKTOP (LWJGL3)
+      - name: Build Desktop (LWJGL3)
         run: ./gradlew :lwjgl3:build
 
-      - name: Build HTML/GWT
+      # 🌐 HTML / GWT
+      - name: Build HTML (GWT Dist)
         run: ./gradlew :html:dist
 
-      - name: Build iOS (RoboVM)
-        run: ./gradlew :ios:createIPA || true
-        # '|| true' para evitar falha em Ubuntu/Linux (iOS só funciona em macOS)
+      # 🍎 iOS (RoboVM) — apenas valida Gradle
+      - name: Build iOS (RoboVM – skipped on Linux)
+        run: ./gradlew :ios:build || true
 
-  # 4️⃣ Job de Upload dos artefatos finais
+  # 3️⃣ PUBLICAÇÃO DOS ARTEFATOS
   artifacts:
     name: Upload built artifacts
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -115,7 +110,7 @@ jobs:
           name: android-apk
           path: android/build/outputs/apk/debug/*.apk
 
-      - name: Upload LWJGL3 Jar
+      - name: Upload LWJGL3 JARs
         uses: actions/upload-artifact@v4
         with:
           name: lwjgl3-jar
@@ -127,15 +122,8 @@ jobs:
           name: html-dist
           path: html/build/dist/**
 
-      - name: Upload Core Jar
+      - name: Upload Core JAR
         uses: actions/upload-artifact@v4
         with:
           name: core-jar
           path: core/build/libs/*.jar
-
-      - name: Upload iOS IPA
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-ipa
-          path: ios/build/robovm/*.ipa
