@@ -1,0 +1,168 @@
+name: LibGDX – Build completo e artefato filtrável
+
+on:
+  workflow_dispatch:
+    inputs:
+
+      ####################################
+      # PLATAFORMAS
+      ####################################
+
+      platform_preset:
+        description: "Pré-configuração de Plataforma"
+        type: choice
+        options: [basico, completo, personalizado]
+        default: completo
+
+      desktop:
+        description: "Desktop (LWJGL)"
+        type: boolean
+        default: true
+
+      android:
+        description: "Android"
+        type: boolean
+        default: true
+
+      html:
+        description: "HTML / GWT"
+        type: boolean
+        default: false
+
+      ios:
+        description: "iOS"
+        type: boolean
+        default: false
+
+      ####################################
+      # EXTENSÕES
+      ####################################
+
+      extension_preset:
+        description: "Pré-configuração de Extensões"
+        type: choice
+        options: [nenhum, basico, completo, personalizado]
+        default: completo
+
+      box2d:
+        description: "Box2D"
+        type: boolean
+        default: true
+
+      freetype:
+        description: "FreeType"
+        type: boolean
+        default: true
+
+      controllers:
+        description: "Controllers"
+        type: boolean
+        default: true
+
+      tools:
+        description: "gdx-tools"
+        type: boolean
+        default: true
+
+      ####################################
+      # VERSÃO (DECORATIVA POR ENQUANTO)
+      ####################################
+
+      libgdx_version:
+        description: "Versão do libGDX (informativo)"
+        type: choice
+        options: [1.12.0, 1.13.0, 1.14.0]
+        default: 1.14.0
+
+env:
+  # Fonte da verdade (por enquanto fixa)
+  LIBGDX_VERSION: 1.14.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Java
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3️⃣ Clone libGDX
+      - name: Clone official libGDX
+        run: |
+          git clone --branch $LIBGDX_VERSION https://github.com/libgdx/libgdx.git libgdx-src
+
+      # 4️⃣ Gradle permissão
+      - name: Grant execute permission for Gradle
+        run: chmod +x libgdx-src/gradlew
+
+      # 5️⃣ Build COMPLETO
+      - name: Build all LibGDX modules
+        working-directory: libgdx-src
+        run: ./gradlew build
+
+      # 6️⃣ Estrutura do artefato
+      - name: Prepare artifact structure
+        run: |
+          ROOT=artifact/libgdx
+          mkdir -p $ROOT/{backends,extensions,natives,tools}
+
+          cp libgdx-src/gdx/build/libs/*.jar $ROOT/ || true
+          cp -r libgdx-src/backends $ROOT/ || true
+          cp -r libgdx-src/extensions $ROOT/ || true
+          cp -r libgdx-src/extensions/gdx-tools/build/libs $ROOT/tools || true
+          cp -r libgdx-src/gdx-platform/build/natives $ROOT/ || true
+
+      # 7️⃣ FILTRO — NOVA INTERFACE
+      - name: Filter artifact content
+        run: |
+          ROOT=artifact/libgdx
+
+          ####################################
+          # PLATAFORMAS
+          ####################################
+
+          if [ "${{ github.event.inputs.platform_preset }}" != "personalizado" ]; then
+            if [ "${{ github.event.inputs.platform_preset }}" = "basico" ]; then
+              rm -rf $ROOT/backends/{android,html,ios,ios-metalangle}
+              rm -rf $ROOT/natives/{android,ios}
+            fi
+          else
+            [ "${{ github.event.inputs.desktop }}" != "true" ] && rm -rf $ROOT/backends/desktop $ROOT/natives/desktop
+            [ "${{ github.event.inputs.android }}" != "true" ] && rm -rf $ROOT/backends/android $ROOT/natives/android
+            [ "${{ github.event.inputs.html }}" != "true" ] && rm -rf $ROOT/backends/html
+            [ "${{ github.event.inputs.ios }}" != "true" ] && rm -rf $ROOT/backends/{ios,ios-metalangle} $ROOT/natives/ios
+          fi
+
+          ####################################
+          # EXTENSÕES
+          ####################################
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "nenhum" ]; then
+            rm -rf $ROOT/extensions
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "basico" ]; then
+            rm -rf $ROOT/extensions/{gdx-box2d,gdx-controllers}
+          fi
+
+          if [ "${{ github.event.inputs.extension_preset }}" = "personalizado" ]; then
+            [ "${{ github.event.inputs.box2d }}" != "true" ] && rm -rf $ROOT/extensions/gdx-box2d
+            [ "${{ github.event.inputs.freetype }}" != "true" ] && rm -rf $ROOT/extensions/gdx-freetype
+            [ "${{ github.event.inputs.controllers }}" != "true" ] && rm -rf $ROOT/extensions/gdx-controllers
+            [ "${{ github.event.inputs.tools }}" != "true" ] && rm -rf $ROOT/tools
+          fi
+
+      # 8️⃣ Upload
+      - name: Upload LibGDX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgdx-${{ env.LIBGDX_VERSION }}
+          path: artifact

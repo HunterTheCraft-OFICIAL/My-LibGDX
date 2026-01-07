@@ -1,17 +1,61 @@
-[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-eclipse.project.name = appName + '-core'
+// ./core/build.gradle (Gradle v8.14.3)
 
+plugins {
+    id "java-library"
+    id "eclipse"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/"]
+        }
+    }
+}
+
+/*
+ * O core NÃO resolve dependências.
+ * Ele apenas consome JARs já resolvidos
+ * pelos Workflows (estrutura final em android/libs).
+ */
 dependencies {
-  api "com.badlogicgames.ashley:ashley:$ashleyVersion"
-  api "com.badlogicgames.box2dlights:box2dlights:$box2dlightsVersion"
-  api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
-  api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
-  api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
-  api "com.badlogicgames.gdx:gdx-bullet:$gdxVersion"
-  api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
-  api "com.badlogicgames.gdx:gdx:$gdxVersion"
 
-  if(enableGraalNative == 'true') {
-    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
-  }
+    // 🔹 LibGDX core
+    compileOnly fileTree(
+        dir: "../android/libs",
+        include: ["gdx*.jar"]
+    )
+
+    // 🔹 Extensões libGDX (se existirem)
+    compileOnly fileTree(
+        dir: "../android/libs",
+        include: [
+            "gdx-box2d*.jar",
+            "gdx-freetype*.jar",
+            "gdx-ai*.jar",
+            "gdx-controllers*.jar"
+        ]
+    )
+
+    // 🔹 Qualquer outra lib local
+    compileOnly fileTree(
+        dir: "../android/libs",
+        include: ["*.jar"]
+    )
+}
+
+eclipse {
+    project {
+        name = appName + "-core"
+    }
 }
