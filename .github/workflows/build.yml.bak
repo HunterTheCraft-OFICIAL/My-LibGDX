@@ -1,5 +1,5 @@
 name: GDX-Liftoff Build
-// (.github/workflows/build.yml)
+# (.github/workflows/build.yml)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-// 1️⃣ Estrutura do Workflow
+# 1️⃣ Estrutura do Workflow
 jobs:
   setup:
     name: Setup environment
@@ -50,7 +50,7 @@ jobs:
       - name: Verify Gradle Wrapper
         run: ./gradlew --version
 
-// 2️⃣ Job de Build completo
+# 2️⃣ Job de Build completo
 
 build:
     name: Build all platforms
@@ -74,7 +74,7 @@ build:
         continue-on-error: true
 
       - name: Archive debug artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: debug-libs
           path: build/debug-libs
@@ -95,7 +95,7 @@ build:
         run: ./gradlew :ios:createIPA || true
         # '|| true' para evitar falha em Ubuntu/Linux (iOS só funciona em macOS)
 
-// 4️⃣ Job de Upload dos artefatos finais
+# 4️⃣ Job de Upload dos artefatos finais
 
 artifacts:
     name: Upload built artifacts
@@ -106,32 +106,32 @@ artifacts:
         uses: actions/checkout@v3
 
       - name: Upload Android APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: android/build/outputs/apk/debug/*.apk
 
       - name: Upload LWJGL3 Jar
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lwjgl3-jar
           path: lwjgl3/build/libs/*.jar
 
       - name: Upload HTML/GWT Dist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html-dist
           path: html/build/dist/**
 
       - name: Upload Core Jar
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core-jar
           path: core/build/libs/*.jar
 
       - name: Upload iOS IPA
         if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
           path: ios/build/robovm/*.ipa
