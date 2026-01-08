@@ -39,8 +39,8 @@ jobs:
         run: |
           ./gradlew :core:build
           ./gradlew :android:assembleDebug
-          ./gradlew :lwjgl3:build
-          ./gradlew :ios:build || true # Farpada no iOS ignorada com sucesso
+          # ./gradlew :lwjgl3:build
+          # ./gradlew :ios:build || true # Farpada no iOS ignorada com sucesso
 
       # =========================================================
       # 3️⃣ ARTEFATOS DOS APPS (O que você quer rodar)
@@ -51,11 +51,11 @@ jobs:
           name: bin-android-apk
           path: android/build/outputs/apk/debug/*.apk
 
-      - name: Artifact - Desktop JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: bin-lwjgl3-jar
-          path: lwjgl3/build/libs/*.jar
+     # - name: Artifact - Desktop JAR
+      #  uses: actions/upload-artifact@v4
+       # with:
+         # name: bin-lwjgl3-jar
+         # path: lwjgl3/build/libs/*.jar
 
       - name: Artifact - Core JAR
         uses: actions/upload-artifact@v4
@@ -80,17 +80,17 @@ jobs:
           name: debug-android-folder
           path: android/*
 
-      - name: Debug - LWJGL3 Folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-lwjgl3-folder
-          path: lwjgl3/*
+     # - name: Debug - LWJGL3 Folder
+       # uses: actions/upload-artifact@v4
+       # with:
+         # name: debug-lwjgl3-folder
+         # path: lwjgl3/*
 
-      - name: Debug - iOS Folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-ios-folder
-          path: ios/*
+     # - name: Debug - iOS Folder
+       # uses: actions/upload-artifact@v4
+       # with:
+         # name: debug-ios-folder
+         # path: ios/*
 
       - name: Debug - Core Folder
         uses: actions/upload-artifact@v4
