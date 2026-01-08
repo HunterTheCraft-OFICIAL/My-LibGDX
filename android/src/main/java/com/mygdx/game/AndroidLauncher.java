@@ -1,4 +1,4 @@
-package gdx.liftoff.android;
+package com.mygdx.game;
 
 import android.os.Bundle;
 
