@@ -1,4 +1,3 @@
-// ./build.gradle (Liftoff GDX)
 buildscript {
   repositories {
     mavenCentral()
